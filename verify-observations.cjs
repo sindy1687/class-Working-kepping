@@ -1,0 +1,15 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
+const src=fs.readFileSync('js/app.js','utf8');
+let id=0;const classes=[{id:'e',kind:'英文'},{id:'m',kind:'數學'},{id:'r',kind:'閱讀'}];
+const ctx=vm.createContext({data:{weeklyObs:[]},classById:id=>classes.find(c=>c.id===id),uid:()=>String(++id),$:()=>({open:false}),page:'學生週誌',jClass:'e',woClass:'m'});
+vm.runInContext(src.slice(src.indexOf('function obsSubjectOf('),src.indexOf('function woLine(')),ctx);
+ctx.getWeekObs=(sid,week,cls)=>{ctx.testSid=sid;ctx.testWeek=week;ctx.testClass=cls;return vm.runInContext('getWeekObs(testSid,testWeek,testClass)',ctx);};
+for(const [cls,note] of [['e','英文觀察'],['m','數學觀察'],['r','閱讀觀察']])ctx.saveWeekObs('s','2026-11-09',cls,note,'');
+assert.equal(ctx.data.weeklyObs.length,3);
+assert.equal(ctx.getWeekObs('s','2026-11-09','e').note,'英文觀察');
+ctx.saveWeekObs('s','2026-11-09','m','數學更新','');assert.equal(ctx.getWeekObs('s','2026-11-09','e').note,'英文觀察');
+ctx.saveWeekObs('s','2026-11-09','r','','');assert.equal(ctx.data.weeklyObs.length,2);
+ctx.data.weeklyObs.push({studentId:'s',week:'2026-11-09',note:'無班級的舊紀錄'});
+assert.equal(ctx.getWeekObs('s','2026-11-09','e').note,'英文觀察');
+assert.equal(ctx.obsSubjectOf(ctx.data.weeklyObs.at(-1)),'未分類');
+console.log('PASS: subject-specific weekly records, updates, deletion, legacy isolation');

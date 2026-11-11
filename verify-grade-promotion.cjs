@@ -1,0 +1,16 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
+const src=fs.readFileSync('js/app.js','utf8');
+const ctx=vm.createContext({window:{addEventListener(){}},setInterval(){},Intl,Date});
+vm.runInContext(src.slice(src.indexOf('function gradeNum('),src.indexOf('// 排課規則：週一')),ctx);
+vm.runInContext(src.slice(src.indexOf('function canonicalGrade('),src.indexOf('const modules=')),ctx);
+vm.runInContext(fs.readFileSync('js/grade-promotion.js','utf8'),ctx);
+const first={students:[{id:'s',grade:'三年級'}],meta:{}};
+ctx.applyAnnualGradePromotion(first,'2026-11-10');assert.equal(first.students[0].grade,'三年級');
+ctx.applyAnnualGradePromotion(first,'2027-07-31');assert.equal(first.students[0].grade,'三年級');
+ctx.applyAnnualGradePromotion(first,'2027-08-01');assert.equal(first.students[0].grade,'四年級');
+ctx.applyAnnualGradePromotion(first,'2027-08-02');assert.equal(first.students[0].grade,'四年級');
+ctx.applyAnnualGradePromotion(first,'2029-08-01');assert.equal(first.students[0].grade,'六年級');
+const end={meta:{gradeSchoolYear:2026},students:[{id:'nine',grade:'九年級',gradeSchoolYear:2026},{id:'left',grade:'四年級',archived:true,gradeSchoolYear:2026},{id:'high',grade:'高中一年級',gradeSchoolYear:2026}]};
+ctx.applyAnnualGradePromotion(end,'2027-08-01');assert.equal(end.students[0].grade,'九年級');assert.equal(end.students[0].gradeReview,true);assert.equal(end.students[1].grade,'四年級');assert.equal(end.students[2].grade,'高中一年級');assert.ok(!end.students[0].archived);
+assert.equal(ctx.promotionSchoolYear('2027-07-31'),2026);assert.equal(ctx.promotionSchoolYear('2027-08-01'),2027);
+console.log('PASS: first-run baseline, annual boundary, no double promotion, multi-year catch-up, graduation review and archived/high-school preservation');

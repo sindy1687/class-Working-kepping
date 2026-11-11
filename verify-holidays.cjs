@@ -1,0 +1,17 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
+const src=fs.readFileSync('js/app.js','utf8');
+const section=src.slice(src.indexOf('function calFor('),src.indexOf('// 排課規則：班級可設定'));
+const ctx=vm.createContext({data:{classes:[{id:'A',weekdays:'2',gradeRule:true},{id:'B',weekdays:'3',gradeRule:true}],calendar:[{date:'2026-11-10',end:'2026-11-12',kind:'自訂放假',title:'研習',classId:'A'}]},gradeNum:s=>Number(s||4),weekday:()=>2,parseWeekdays:s=>s?[Number(s)]:[]});
+vm.runInContext(section,ctx);
+assert.equal(vm.runInContext("holidayOff('2026-11-11','A').title",ctx),'研習');
+assert.equal(vm.runInContext("holidayOff('2026-11-11','B')",ctx),null);
+assert.equal(vm.runInContext("classAllows({id:'A'}, {}, '2026-11-11')",ctx),false);
+assert.equal(vm.runInContext("holidayOff('2026-11-13','A')",ctx),null);
+ctx.data.calendar[0].classId='';
+assert.equal(vm.runInContext("classAllows({id:'B'}, {}, '2026-11-11')",ctx),false);
+assert.equal(vm.runInContext("holidayOff('2026-11-11','B')",ctx),null);
+assert.equal(vm.runInContext("holidayOff('2026-11-11','A',{grade:8})",ctx),null);
+assert.equal(vm.runInContext("holidayOff('2026-11-11','A',{grade:4}).title",ctx),'研習');
+ctx.weekday=()=>0;
+assert.equal(vm.runInContext("holidayOff('2026-11-11','')",ctx),null);
+console.log('PASS: holiday ranges, class scope, all classes, no-class days, grade exclusion, weekends and range boundaries');

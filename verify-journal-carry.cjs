@@ -1,0 +1,7 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');const source=fs.readFileSync('js/app.js','utf8');let id=0;
+const ctx=vm.createContext({jClass:'english',recordClass:j=>j.classId,calFor:date=>date==='2026-11-09'?{kind:'停課'}:null,uid:()=>String(++id),data:{attendance:[{studentId:'s',date:'2026-11-06',status:'事假'}],journals:[{studentId:'s',classId:'english',date:'2026-11-03',tasks:[{text:'L10 檢測卷 2',done:false,kistId:'preserved',start:'18:30'}]},{studentId:'s',classId:'english',date:'2026-11-04',tasks:[]},{studentId:'s',classId:'english',date:'2026-11-06',tasks:[{text:'未上課不應帶入',done:false}]},{studentId:'s',classId:'english',date:'2026-11-09',tasks:[{text:'停課不應帶入',done:false}]},{studentId:'s',classId:'math',date:'2026-11-09',tasks:[{text:'另一班不應帶入',done:false}]}]}});
+vm.runInContext(source.slice(source.indexOf('function journalProgressAttended('),source.indexOf('function classesPage(')),ctx);
+let tasks=ctx.carryOver('s','2026-11-10','english');assert.equal(tasks.length,1);assert.equal(tasks[0].text,'L10 檢測卷 2');assert.equal(tasks[0].start,'18:30');assert.equal(tasks[0].kistId,'preserved');
+assert.equal(ctx.unifiedSeed('2026-11-10')[0].text,'L10 檢測卷 2');
+ctx.data.journals[0].tasks[0].done=true;assert.equal(ctx.carryOver('s','2026-11-10','english').length,0);
+console.log('PASS: skip absences, closures and empty journals; preserve class, task details and completed boundaries');

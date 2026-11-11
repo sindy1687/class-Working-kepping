@@ -1,0 +1,79 @@
+/* 裝置適配：手機 < 640、平板 640–1100、電腦 > 1100。 */
+html{min-width:320px;scroll-padding-top:90px;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{min-width:320px}.shell,.shell>.body,main,#content{min-width:0;max-width:100%}
+.shell>.body{min-height:100vh;min-height:100dvh}
+.tablewrap{min-width:0;max-width:100%;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;touch-action:pan-x pan-y}
+.tablewrap:focus-visible{outline:2px solid #51795f;outline-offset:3px}
+.filters>label,.formgrid>*,.grid2>*,.jcards>*,.ul-grid>*,.ma-students>*,.stask-grid>*,.pr-books>*{min-width:0}
+input,select,textarea{max-width:100%}img{max-width:100%}
+.pagehead>div:first-child{min-width:0}.pagehead h1,.pagehead p{overflow-wrap:anywhere}
+#navBackdrop{position:fixed;inset:0;z-index:19;border:0;border-radius:0;background:#20372b65;backdrop-filter:blur(2px);padding:0}
+#navBackdrop[hidden]{display:none}
+@media(min-width:1101px){
+ #sidebar{width:248px;transform:none;z-index:20;height:100vh;height:100dvh}
+ .shell>.body{margin-left:248px;width:calc(100% - 248px)}
+ .shell>.body>header{padding-left:28px;padding-right:28px}
+ #menu,#closeMenu{display:none}.shell>.body>main{padding:30px;max-width:1600px}
+ .ul-grid{grid-template-columns:repeat(auto-fill,minmax(225px,1fr))}
+}
+@media(min-width:1500px){.ma-students{grid-template-columns:repeat(2,minmax(0,1fr))}.ul-grid{grid-template-columns:repeat(auto-fill,minmax(245px,1fr))}}
+@media(max-width:1100px){
+ #sidebar{width:min(310px,86vw);height:100vh;height:100dvh;transform:translateX(-102%);transition:transform .2s;z-index:20;box-shadow:none;overscroll-behavior:contain}
+ #sidebar.open{transform:translateX(0);box-shadow:6px 0 25px #20372b24}
+ #sidebar nav{min-height:0;overscroll-behavior:contain;padding-bottom:20px}
+ #sidebar .brand{padding:20px 18px 18px;gap:10px}#sidebar .brand>span:nth-child(2){flex:1}
+ #sidebar .sidefoot{padding:12px 18px calc(12px + env(safe-area-inset-bottom))}
+ #menu,#closeMenu{display:inline-flex;align-items:center;justify-content:center;min-width:40px;min-height:40px;padding:6px}
+ .shell>.body{margin-left:0;width:100%}.shell>.body>main{padding:24px}
+ .shell>.body>header{padding:10px 24px;height:auto;min-height:68px;gap:12px;display:grid;grid-template-columns:minmax(0,1fr) minmax(160px,290px) auto}
+ .shell>.body>header .crumbs{display:flex;align-items:center;gap:9px;min-width:0;white-space:normal}
+ .shell>.body>header .crumbs .muted{display:none}.shell>.body>header #crumb{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+ #gsearch{width:100%;max-width:none;min-width:0}.headright{min-width:0;gap:8px}#status{font-size:11px;display:block;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ html.nav-open,html.nav-open body{overflow:hidden}
+ .pagehead{align-items:flex-start}.pagehead .actions{max-width:50%;justify-content:flex-end}
+ .ma-students,.stask-grid,.pr-books,.jcards{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .school-layout{grid-template-columns:minmax(0,1fr)}.school-layout .school-stats{width:100%}
+ .filters{gap:12px}.filters>label{flex:1 1 160px}.filters>button{align-self:end}
+ dialog{max-width:min(900px,calc(100vw - 32px));max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overscroll-behavior:contain}
+ .school-score,.school-row-action{touch-action:manipulation}
+}
+@media(min-width:640px) and (max-width:1100px){
+ .formgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.formgrid .wide{grid-column:1/-1}
+ .cards,.cards.six{grid-template-columns:repeat(3,minmax(0,1fr))}.cards.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .ul-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+ .grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:639px){
+ html{scroll-padding-top:125px}.shell>.body>main{padding:18px 12px calc(24px + env(safe-area-inset-bottom))}
+ .shell>.body>header{padding:8px max(12px,env(safe-area-inset-right)) 10px max(12px,env(safe-area-inset-left));grid-template-columns:minmax(0,1fr) auto;gap:7px 8px}
+ .shell>.body>header .crumbs{grid-column:1;grid-row:1}.shell>.body>header .headright{grid-column:2;grid-row:1}.shell>.body>header #gsearch{grid-column:1/-1;grid-row:2;height:37px;font-size:16px;margin:0}
+ .headright .avatar{display:none}#status{max-width:145px;font-size:10px}
+ .pagehead{flex-direction:column;gap:12px;margin-bottom:18px}.pagehead .actions{max-width:100%;width:100%;justify-content:flex-start;gap:7px}
+ .pagehead h1,.stask-workspace .pagehead h1,.ul-workspace .pagehead h1,.cw-workspace .pagehead h1{font-size:23px;line-height:1.45}
+ .pagehead p{font-size:12px;line-height:1.7}.panel{padding:16px;border-radius:12px}.actions button{white-space:normal}
+ .cards,.cards.six{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cards.three{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+ .card{padding:14px}.card strong{font-size:24px}.card small{font-size:10px}
+ .grid2,.jcards,.ma-students,.stask-grid,.pr-books,.ul-grid{grid-template-columns:minmax(0,1fr);gap:12px}
+ .formgrid{grid-template-columns:minmax(0,1fr)}.formgrid .wide{grid-column:1}
+ .filters{display:flex;flex-wrap:wrap;gap:10px}.filters>label{flex:1 1 130px;min-width:0}.filters>label:has(input[type=search]){flex-basis:100%}
+ .seg,.gtabs,.kchips,.pr-student-strip,.stask-tabs,.ul-categories{max-width:100%;overscroll-behavior-x:contain}
+ .gtabs{grid-template-columns:repeat(2,minmax(0,1fr))}.gtabs button{min-width:0;padding:11px 8px}
+ .rowedit,.rrow,.gjrow{max-width:100%;min-width:0}.bookpick{min-width:0}.booksug{max-width:calc(100vw - 60px)}
+ dialog{width:calc(100vw - 20px);max-width:calc(100vw - 20px);max-height:calc(100vh - 20px);max-height:calc(100dvh - 20px);padding:18px;border-radius:14px;margin:auto;overflow:auto}
+ #editor{padding:0}#fields{padding:14px 12px 8px}.dialogfoot,#obsDlg .dialogfoot{flex-wrap:wrap;gap:9px;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+ #editor .dialogfoot{padding:11px 12px max(11px,env(safe-area-inset-bottom))}.dialogfoot>.help{width:100%;font-size:11px}
+ .dialogfoot .actions{margin-left:auto;justify-content:flex-end}.english-task-grid{gap:16px 10px}.english-task-head{gap:8px}.english-task-head .actions{gap:5px}
+ .school-table{min-width:620px}.cleaning-table,.cw-board .cw-table{min-width:750px}.reading-totals{min-width:700px}
+ .cw-board-head{gap:12px}.cw-progress{min-width:100px}.pr-summary{padding-left:0;padding-right:0}
+ footer{font-size:10px;flex-direction:column;gap:6px}.toast{left:12px;right:12px;max-width:none;bottom:calc(16px + env(safe-area-inset-bottom));font-size:12px}
+}
+@media(pointer:coarse) and (max-width:1100px){
+ button,summary,a,input,select,label{touch-action:manipulation}
+ input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{font-size:16px;line-height:1.4}
+ button,.dialogfoot a{min-height:40px}.tablewrap button,.ul-menu button,.ma-record-actions button{min-height:34px}
+ input[type=checkbox],input[type=radio]{min-width:16px;min-height:16px}.cw-person input{min-width:14px;min-height:14px}
+ .navrow .pin{opacity:1;min-width:44px}.navrow>button{min-height:44px}
+ .school-name-cell .school-row-action{font-size:12px;min-height:32px}.school-inline-score{font-size:16px;min-height:38px}.gcell{font-size:16px;min-height:40px}
+ .ma-record-actions>summary,.stask-menu>summary,.ul-menu>summary{min-height:36px;min-width:30px;display:flex;align-items:center;justify-content:center}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}

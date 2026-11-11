@@ -1,0 +1,17 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
+const source=fs.readFileSync('js/app.js','utf8');
+const fields=Object.fromEntries(['startTime','endTime','subject','content'].map(k=>[k,{value:''}]));
+let inserted;
+const nodes={journalHistory:{value:'old'},editForm:{elements:{namedItem:k=>fields[k]}},taskRows:{querySelectorAll:()=>[],insertAdjacentHTML:(where,html)=>{inserted=html;}}};
+const original={id:'old',studentId:'s1',startTime:'15:30',endTime:'16:00',subject:'英文',content:'複習',tasks:[{id:'t1',text:'單字',done:true}]};
+const ctx=vm.createContext({data:{journals:[original]},journalStudent:'s1',journalClassId:'english',recordClass:r=>r.classId||'english',$:id=>nodes[id],toast(){},confirm:()=>true,uid:()=> 'new-id',taskRow:t=>JSON.stringify(t),updateTaskCount(){},Set});
+vm.runInContext(source.slice(source.indexOf('function fillJournalHistory('),source.indexOf('function openJournal(')),ctx);
+ctx.fillJournalHistory('content');assert.equal(fields.startTime.value,'15:30');assert.equal(fields.content.value,'複習');
+ctx.fillJournalHistory('tasks');assert.equal(JSON.parse(inserted).done,false);assert.equal(JSON.parse(inserted).id,'new-id');assert.equal(original.tasks[0].done,true);
+ctx.journalStudent='s2';fields.content.value='保留';ctx.fillJournalHistory('content');assert.equal(fields.content.value,'保留');
+console.log('PASS: history time/content fill, fresh task IDs, reset completion, source unchanged, student isolation');
+ctx.esc=s=>String(s??'').replace(/</g,'&lt;');ctx.tTime=t=>t.start||'';ctx.formatAssessmentPaper=s=>String(s??'');
+vm.runInContext(source.slice(source.indexOf('function journalHistorySummary('),source.indexOf('function showJournalHistoryPreview(')),ctx);
+const history={date:'2026-11-09',subject:'完成度：未完成',content:'今天複習 L19',tasks:[{text:'L19 Workbook R2',done:false,start:'18:30'}],readings:[]};
+assert.ok(ctx.journalHistorySummary(history).includes('L19 Workbook R2'));assert.ok(!ctx.journalHistorySummary(history).startsWith('完成度'));
+const preview=ctx.journalHistoryPreviewHtml(history);assert.ok(preview.includes('L19 Workbook R2'));assert.ok(preview.includes('18:30'));assert.ok(preview.includes('今天複習 L19'));

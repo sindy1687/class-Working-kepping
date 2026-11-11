@@ -1,0 +1,16 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
+const src=fs.readFileSync('js/app.js','utf8');
+const ctx=vm.createContext({classById:id=>({name:id,kind:id==='E'?'英文':'數學'}),kindFromName:()=> '其他',esc:String,uid:()=> 'new-id'});
+vm.runInContext(src.slice(src.indexOf('const ENGLISH_TASKS='),src.indexOf('try{const s=JSON.parse(localStorage.getItem(NAVSTORE)')),ctx);
+const html=ctx.englishTaskPicker('E');
+for(const label of ['教學','課習','課習訂正','Workbook R1','Workbook R2','Workbook R3','練習卷','檢測卷 1','檢測卷 2','檢測卷 3','檢測卷 4','自訂'])assert.ok(html.includes(label));
+assert.equal(ctx.englishTaskPicker('M'),'');
+ctx.data={journals:[{studentId:'s',classId:'E',date:'2026-11-08',tasks:[{text:'英文',done:false}]},{studentId:'s',classId:'M',date:'2026-11-09',tasks:[{text:'數學',done:false}]}]};ctx.jClass='E';ctx.recordClass=r=>r.classId;ctx.hasJournalProgress=j=>j.tasks.length>0;ctx.journalProgressAttended=()=>true;
+vm.runInContext(src.slice(src.indexOf('function carryOver('),src.indexOf('function classesPage(')),ctx);
+assert.equal(ctx.carryOver('s','2026-11-10','E')[0].text,'英文');
+ctx.document={addEventListener(){}};vm.runInContext(src.slice(src.indexOf('function englishTaskData('),src.indexOf('function taskRow(')),ctx);
+assert.equal(ctx.englishTaskText({lesson:'1',option:'自訂',detail:'單字400'}),'L1 單字400');
+const card=ctx.englishTaskCard({lesson:'2',option:'Workbook R2',needsHelp:true,start:'18:30',end:'18:50'});
+for(const part of ['task-lesson','task-option','tstart','tend','task-detail','task-help','data-task-move'])assert.ok(card.includes(part));
+assert.equal(ctx.englishTaskData({text:'舊有內容'}).detail,'舊有內容');
+console.log('PASS: English options, non-English exclusion, class-specific carry-over');

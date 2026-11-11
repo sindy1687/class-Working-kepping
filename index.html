@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sindy 課輔班工作助手</title>
+<link rel="stylesheet" href="css/style.css?v=20261110-summer-mode">
+<link rel="stylesheet" href="css/responsive.css?v=20261110">
+</head>
+<body>
+<button id="navBackdrop" type="button" hidden tabindex="-1" aria-label="關閉功能選單"></button>
+<div class="shell"><aside id="sidebar"><div class="brand"><span class="mark">S.</span><span>Sindy<small>課輔班工作助手</small></span><button class="mobile" id="closeMenu" aria-label="關閉選單">×</button></div><nav id="nav" aria-label="主要功能"></nav><div class="sidefoot">資料自動儲存在這個瀏覽器<br>請定期到「資料匯入匯出」備份</div></aside>
+<div class="body"><header><div class="crumbs"><button class="mobile" id="menu" aria-label="開啟選單">☰</button> <span class="muted">工作空間　›</span><strong id="crumb">總覽</strong></div><input id="gsearch" type="search" placeholder="搜尋學生、週誌、書名…" aria-label="全站搜尋"><div class="headright"><span id="status" class="status" role="status" aria-live="polite"></span><span class="avatar">S</span></div></header>
+<main><div id="alert"></div><div id="content"></div><footer><span>每一份紀錄，都是陪伴的累積。</span><span id="version">Sindy 工作台</span></footer></main></div></div>
+<dialog id="editor"><form id="editForm"><h2 id="formTitle"></h2><div id="fields" class="formgrid"></div><div class="dialogfoot"><span class="help">按「完成」後自動儲存</span><div class="actions"><button type="button" id="cancel">取消</button><button class="primary" type="submit">完成</button></div></div></form></dialog>
+<dialog id="attMenu" aria-labelledby="attTitle"><h2 id="attTitle"></h2><div class="attopts" id="attOpts"></div><label>備註（請假原因、到班時間等）<input id="attNote" maxlength="500"></label><div class="dialogfoot"><button type="button" class="danger" data-attset="">清除紀錄</button><button type="button" data-action="attClose">取消</button></div></dialog>
+<input id="importFile" type="file" accept="application/json,.json" hidden><div id="toasts"></div>
+<script src="js/school-grades.js?v=20261110-responsive"></script>
+<script src="js/math-assessments.js?v=20261110-math-design"></script>
+<script src="js/cleaning.js?v=20261110-undo"></script>
+<script src="js/grade-promotion.js?v=20261110"></script>
+<script src="js/personal-reading.js?v=20261110-done-only"></script>
+<script src="js/personal-reading-editor.js?v=20261110"></script>
+<script src="js/special-tasks.js?v=20261110"></script>
+<script src="js/useful-links.js?v=20261110-compact"></script>
+<script src="js/materials.js?v=20261110"></script>
+<script src="js/unified-progress.js?v=20261110"></script>
+<script src="js/app.js?v=20261110-summer-sync"></script>
+<script src="js/cloud-sync.js?v=20261110-url"></script>
+<script src="js/holidays.js?v=20261110"></script>
+<script src="js/responsive.js?v=20261110"></script>
+</body>
+</html>

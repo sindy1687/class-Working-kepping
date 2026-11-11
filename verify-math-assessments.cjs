@@ -1,0 +1,14 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
+const ctx=vm.createContext({document:{addEventListener(){}},gClass:'math1',gEntryDate:'2026-11-10',data:{meta:{mathAssessments:{math1:[{title:'5-1',max:50,pass:40}]}},grades:[{id:'g1',section:'數學檢測',classId:'math1',studentId:'s1',title:'5-1',date:'2026-11-10',paper:'1',score:'30'},{id:'g2',section:'數學檢測',classId:'math2',studentId:'s1',title:'5-1',date:'2026-11-10',paper:'1',score:'50'},{id:'eng',section:'檢測',classId:'math1',studentId:'s1',title:'5-1',date:'2026-11-10',paper:'1',score:'99'}]},gClassOf:g=>g.classId,gLatest:list=>list[0]||null,today:()=> '2026-11-10'});
+vm.runInContext(fs.readFileSync('js/math-assessments.js','utf8'),ctx);
+const base=ctx.mathAssessmentGradeBase('s1','5-1','2');assert.equal(base.subject,'數學');assert.equal(base.maxScore,'50');assert.equal(base.passScore,'40');assert.equal(base.paper,'2');
+assert.equal(ctx.mathAssessmentCell('s1','1','math1','5-1').score,'30');assert.equal(ctx.mathAssessmentCell('s1','1','math2','5-1').score,'50');assert.equal(ctx.mathAssessmentCell('s1','2','math1','5-1'),null);
+assert.equal(ctx.mathAssessmentRecords('math1').length,1);assert.equal(ctx.mathAssessmentUnits('math1')[0],'5-1');
+ctx.data.grades.push({id:'retake',section:'數學檢測',classId:'math1',studentId:'s1',title:'5-1',date:'2026-11-11',paper:'1',score:'45'});
+assert.equal(ctx.mathAssessmentCell('s1','1','math1','5-1','2026-11-10').score,'30');assert.equal(ctx.mathAssessmentCell('s1','1','math1','5-1','2026-11-11').score,'45');assert.equal(ctx.mathAssessmentDates('math1','5-1').length,2);
+ctx.scoreOf=g=>g.score===''||g.score==null?null:Number(g.score);ctx.gPass=g=>Number(g.passScore||80);
+assert.equal(ctx.mathAssessmentLabel({date:'2026-10-23',title:'5-1',score:'78',passScore:'80'}),'10/23　5-1　78分（未通過）');
+assert.equal(ctx.mathAssessmentResult({passed:true,score:''}),'PASS（通過）');
+ctx.esc=s=>String(s??'');ctx.classStudents=()=>[{id:'s1',name:'學生一'}];ctx.sLabel=s=>s.name;ctx.gStatus=g=>[Number(g.score)>=40?'good':'low'];ctx.gCell=()=>'<td>輸入</td>';
+const view=ctx.mathAssessmentView('math1');assert.ok(view.includes('id="mathAssessmentPaper"'));assert.ok(view.includes('1卷'));assert.ok(view.includes('日期・單元・成績'));assert.ok(!view.includes('<th>檢測 1</th>'));assert.ok(view.includes('11/10'));
+console.log('PASS: math assessment configuration, score defaults, class/unit/paper separation and English isolation');

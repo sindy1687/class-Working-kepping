@@ -1,0 +1,15 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');const src=fs.readFileSync('js/app.js','utf8');
+const ctx=vm.createContext({READ_TYPES:['KIST','大量閱讀','國內外大事','文字書','繪本','橋樑書'],normTitle:s=>String(s).replace(/\s/g,'').toLowerCase(),recordClass:r=>r.classId,rFrom:'',rTo:'',rClass:'',data:{journals:[{studentId:'s',classId:'r',date:'2026-11-10',readings:[{type:'大量閱讀',title:'一本書',bookType:'文字書',done:true}],tasks:[{option:'大量閱讀',detail:'一本書',bookId:'C001',done:true},{option:'KIST',detail:'KIST L4 第1課',done:true},{option:'每週國內外大事',issue:'26',done:true},{option:'KIST',detail:'未完成文章',done:false}]}],progress:[{studentId:'s',category:'KIST',title:'不能從進度表讀取',done:true}]}});
+ctx.classById=id=>id==='r'?{id:'r',kind:'閱讀'}:{id,kind:'數學'};
+ctx.data.journals.push({studentId:'s',classId:'math',date:'2026-11-10',tasks:[{option:'KIST',detail:'數學班的篇目不列入',done:true}],readings:[]});
+ctx.data.journals.push({studentId:'s',date:'2026-11-10',tasks:[{option:'KIST',detail:'班級不明不列入',done:true}],readings:[]});
+vm.runInContext(src.slice(src.indexOf('function readingBookCategory('),src.indexOf('function readingPage(')),ctx);
+let result=ctx.readingItems();assert.equal(result.rows.length,4);assert.equal(result.rows.find(r=>r.type==='大量閱讀').times,1);assert.ok(result.rows.some(r=>r.title==='每週國內外大事 第26期'));assert.ok(!result.rows.some(r=>r.title==='不能從進度表讀取'));assert.equal(result.unchecked.length,1);
+ctx.data.journals[0].tasks[1].done=false;assert.ok(!ctx.readingItems().rows.some(r=>r.type==='KIST'));
+ctx.rClass='other';assert.equal(ctx.readingItems().rows.length,0);
+ctx.rClass='';ctx.data.classes=[{id:'r',kind:'閱讀'},{id:'math',kind:'數學'}];ctx.inClass=(s,id)=>s.classId===id||(s.classIds||[]).includes(id);ctx.classStudents=()=>[{id:'reading',classId:'r'},{id:'mathOnly',classId:'math'},{id:'multi',classId:'math',classIds:['r']}];
+assert.equal(ctx.readingStudents().length,2);assert.ok(!ctx.readingStudents().some(s=>s.id==='mathOnly'));
+assert.equal(ctx.readingBookCategory('a001'),'繪本');assert.equal(ctx.readingBookCategory('Ｂ002'),'橋樑書');assert.equal(ctx.readingBookCategory('C003'),'文字書');assert.equal(ctx.readingBookCategory('Alice'), '');
+const coded=ctx.journalReadingItems({studentId:'s',date:'2026-11-10',readings:[{bookId:'A001',title:'繪本一',type:'文字書',bookType:'文字書',done:true}],tasks:[{option:'大量閱讀',bookId:'B002',bookType:'文字書',detail:'橋梁二',done:true}]});
+assert.equal(coded.length,2);assert.equal(coded[0].type,'繪本');assert.equal(coded[1].type,'橋樑書');
+console.log('PASS: journal-only source, reading tasks, book classification, mirrored-entry deduplication, unchecked updates and class filtering');

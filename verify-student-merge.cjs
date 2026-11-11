@@ -1,0 +1,11 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
+const src=fs.readFileSync('js/app.js','utf8');
+const ctx=vm.createContext({data:{students:[{id:'keep',name:'小明',number:'1',classId:'e',school:'甲校',note:'原備註'},{id:'dup',name:' 小明 ',number:'2',classId:'m',contact:'123',note:'另一筆備註'},{id:'other',name:'小華',classId:'e'}],journals:[{id:'j1',studentId:'keep'},{id:'j2',studentId:'dup'}],weeklyObs:[{id:'o1',studentId:'dup'}],progress:[{id:'p1',studentId:'dup'}],pins:['學生週誌']}});
+vm.runInContext(src.slice(src.indexOf('function studentNameKey('),src.indexOf('document.addEventListener(\'change\',e=>{if(e.target.id===\'studentGradeFilter\')')),ctx);
+assert.equal(ctx.duplicateStudentGroups().length,1);
+assert.equal(ctx.mergeStudentRecords('keep',['dup']),1);
+assert.equal(ctx.data.students.length,2);assert.equal(ctx.data.journals.length,2);
+for(const key of ['journals','weeklyObs','progress'])assert.ok(ctx.data[key].every(r=>r.studentId==='keep'));
+const keep=ctx.data.students.find(s=>s.id==='keep');assert.equal(keep.number,'1');assert.equal(keep.contact,'123');assert.ok(keep.note.includes('另一筆備註'));assert.ok(keep.note.includes('原編號：2'));assert.ok(keep.classIds.includes('m'));
+assert.equal(ctx.mergeStudentRecords('keep',['dup']),0);
+console.log('PASS: duplicate detection, reference migration, record preservation, class union, notes and safe repeat');

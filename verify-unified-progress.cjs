@@ -1,0 +1,10 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');let sequence=0;
+const ctx=vm.createContext({document:{addEventListener(){}},isUnified:id=>id==='unified',classStudents:()=>[{id:'s1'},{id:'s2'}],uid:()=>String(++sequence),normTitle:s=>s.trim().toLowerCase(),data:{progress:[]}});
+vm.runInContext(fs.readFileSync('js/unified-progress.js','utf8'),ctx);
+const template={unit:'L10',date:'2026-11-10',subject:'英文',tasks:[{text:'課習',done:false}]};
+let result=ctx.saveUnifiedProgressRecords('unified',['s1','s2'],template);assert.equal(result.created,2);assert.equal(ctx.data.progress.length,2);assert.notEqual(ctx.data.progress[0].tasks[0].id,ctx.data.progress[1].tasks[0].id);
+ctx.data.progress[0].tasks[0].done=true;
+result=ctx.saveUnifiedProgressRecords('unified',['s1','s2'],template);assert.equal(result.updated,2);assert.equal(ctx.data.progress.length,2);assert.equal(ctx.data.progress[0].tasks[0].done,true);assert.equal(ctx.data.progress[1].tasks[0].done,false);
+ctx.saveUnifiedProgressRecords('unified',['s1'],{...template,unit:'L11'});assert.equal(ctx.data.progress.length,3);assert.equal(ctx.data.progress.filter(r=>r.unit==='L11').length,1);
+assert.throws(()=>ctx.saveUnifiedProgressRecords('other',['s1'],template),/不是齊一教學/);
+console.log('PASS: one template for selected students, independent completion, no duplicate resave, separate units and class restriction');

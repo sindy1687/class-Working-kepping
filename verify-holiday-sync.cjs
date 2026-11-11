@@ -1,0 +1,7 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');const ctx=vm.createContext({TW_HOLIDAYS:[['2027-01-01','原假日']]});const src=fs.readFileSync('js/holidays.js','utf8');vm.runInContext(src.slice(src.indexOf('function parseOfficialHolidays('),src.indexOf('async function refreshPublicHolidays(')),ctx);
+const official=ctx.parseOfficialHolidays({years:[2027],days:[{date:'20270101',year:'2027',isholiday:'是',name:'開國紀念日',holidaycategory:'放假之紀念日及節日'},{date:'20270102',year:'2027',isholiday:'是',name:null,holidaycategory:'星期六、星期日'},{date:'20270103',year:'2027',isholiday:'否',name:'工作日'}]});assert.equal(official.events.length,1);
+const workspace={calendar:[{id:'builtin',date:'2027-01-01',title:'原假日',note:'內建',kind:'國定假日',classId:''},{id:'custom',date:'2027-01-02',title:'研習',kind:'自訂放假',classId:'r'},{id:'open',date:'2027-01-01',title:'補課',kind:'補課',classId:'r'},{id:'past',date:'2026-01-01',source:'ntpc-holidays',kind:'國定假日',classId:''}]};
+ctx.mergeOfficialHolidays(workspace,official);assert.ok(workspace.calendar.some(e=>e.title==='開國紀念日'));assert.ok(!workspace.calendar.some(e=>e.id==='builtin'));for(const id of ['custom','open','past'])assert.ok(workspace.calendar.some(e=>e.id===id));assert.equal(ctx.mergeOfficialHolidays(workspace,official),false);
+assert.throws(()=>ctx.parseOfficialHolidays({files:{}}),/GAS/);
+new vm.Script(fs.readFileSync('雲端同步/Code.gs','utf8'));
+console.log('PASS: official holiday parsing, weekend exclusion, custom/makeup preservation, year scoping, idempotency and GAS syntax');
