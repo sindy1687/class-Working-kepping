@@ -1,0 +1,10 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');let quota=false;const storage=new Map(),nodes={editor:{open:false}};
+const ctx={data:{schema:1,meta:{materialFolders:[{id:'old'}]},attachments:[{id:'old'}]},modules:{教材庫:{key:'attachments'}},STORE:'store',localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>{if(quota&&k==='store')throw Error('quota');storage.set(k,v);},removeItem:k=>storage.delete(k)},document:{addEventListener(){},querySelector(){return null;}},window:{addEventListener(){}},navigator:{},$:id=>nodes[id],validateImport:d=>d,render(){},setTimeout,clearTimeout,AbortController,confirm:()=>true,exportData(){}};
+vm.createContext(ctx);let s=fs.readFileSync('js/cloud-sync.js','utf8');s=s.slice(0,s.lastIndexOf('if(cloud.url)cloudPull'));vm.runInContext(s,ctx);
+vm.runInContext("cloudSetState=()=>{};cloudPush=()=>{};cloud.url='https://example.com';cloud.synced.attachments='stale';cloud.ver.attachments='same';cloud.synced['meta.materialFolders']='old';",ctx);
+storage.set('store',JSON.stringify(ctx.data));ctx.cloudFetch=async()=>({files:{attachments:{data:[{id:'old'},{id:'math'}],ver:'same'},'meta.materialFolders':{data:[{id:'old'},{id:'math-folder'}],ver:'new'}}});
+(async()=>{quota=true;await ctx.cloudPull({force:true});assert(ctx.data.attachments.some(x=>x.id==='math'));assert.equal(ctx.data.meta.materialFolders.length,2);assert.equal(storage.get('sindy-local-cache-stale'),'1');
+assert(!Object.keys(ctx.cloudDirty()).includes('meta.materialFolders'));
+ctx.data={schema:1,meta:{materialFolders:[{id:'old'}]},attachments:[{id:'old'}]};await ctx.cloudPull({force:true});assert.equal(ctx.data.attachments.length,2);quota=false;assert(ctx.cloudCacheData());assert(!storage.has('sindy-local-cache-stale'));
+console.log('PASS: stale local cache cannot drop imported math; folder catalog is read-only; quota marker recovers on reload');
+})().catch(e=>{console.error(e);process.exitCode=1;});

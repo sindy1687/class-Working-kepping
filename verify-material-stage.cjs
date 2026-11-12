@@ -1,0 +1,15 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');const c={};vm.createContext(c);vm.runInContext(fs.readFileSync('js/material-stage.js','utf8'),c);
+assert.equal(c.materialStage({name:'I-1 題目卷',sourcePath:'新版英文上課資料/國中練習/I'}),'國中');
+assert.equal(c.materialStage({name:'L1 檢測卷',sourcePath:'新版英文上課資料/1.國小檢測卷/初級'}),'國小');
+assert.equal(c.materialStage({name:'單字檢定',sourcePath:'資料/國小國中前測卷'}),'共用');
+assert.equal(c.materialStage({name:'R8 練習卷'}),'待確認');
+assert.equal(c.materialStage({name:'課本',grade:'7年級'}),'國中');
+assert.equal(c.materialStage({name:'國小單字',stage:'國中'}),'國中');
+console.log('PASS: explicit stage, grade, filename and nearest source folder; shared/unknown are not guessed');
+for(let i=1;i<=8;i++)assert.equal(c.materialStage({name:'基礎級第'+i+'級',category:'檢定卷'}),'國小');
+for(let i=1;i<=10;i++)assert.equal(c.materialStage({name:'成長級'+i+' -02卷',category:'檢定卷'}),'國中');
+assert.equal(c.materialVocabStage({name:'解答',sourcePath:'教材/博幼基礎級單字檢定'}),'國小');
+assert.equal(c.materialVocabStage({name:'成長級11',category:'檢定卷'}),'');
+assert.equal(c.materialVocabStage({name:'基礎級9',category:'檢定卷'}),'');
+assert.equal(c.materialVocabStage({name:'基礎2',category:'課本'}),'');
+console.log('PASS: foundation levels 1–8 elementary, growth levels 1–10 junior, linked answers, out-of-range levels excluded');

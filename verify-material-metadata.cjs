@@ -1,0 +1,11 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const calls=[];const ctx={DriveApp:{getFileById:id=>({getName:()=>{calls.push(id);return '英文 L10 單字檢測卷';}})},UrlFetchApp:{fetch:()=>({getResponseCode:()=>200,getAllHeaders:()=>({}),getContentText:()=>'<html><title>Math &amp; Reading &#x4E2D;</title></html>'})}};
+vm.createContext(ctx);vm.runInContext(fs.readFileSync('雲端同步/Code.gs','utf8'),ctx);
+assert.equal(ctx.materialMeta_('https://drive.google.com/file/d/abc123/view').title,'英文 L10 單字檢測卷');assert.equal(calls[0],'abc123');
+assert.equal(ctx.materialMeta_('https://example.com/lesson').title,'Math & Reading 中');
+assert.throws(()=>ctx.materialMeta_('http://localhost/test'));assert.throws(()=>ctx.materialMeta_('https://127.0.0.1/secret'));
+ctx.UrlFetchApp.fetch=()=>({getResponseCode:()=>302,getAllHeaders:()=>({Location:'https://127.0.0.1/private'})});assert.throws(()=>ctx.materialMeta_('https://example.com/redirect'));
+const front={document:{addEventListener(){}},data:{attachments:[{name:'英文 L10 單字檢測卷',subject:'數學',category:'其他'},{name:'五年級數學 5-1 練習卷'}]}};vm.createContext(front);vm.runInContext(fs.readFileSync('js/material-link.js','utf8'),front);
+assert.equal(front.materialSuggestions('五年級數學 5-1 練習卷').grade,'5年級');assert.equal(front.materialSuggestions('英文 L10 單字檢測卷').unit,'L10');
+const plan=front.materialClassificationPlan();assert.equal(plan[0].hints.subject,undefined);assert.equal(plan[0].hints.category,'檢測卷');assert.equal(plan[1].hints.unit,'5-1');
+console.log('PASS: Drive title, decoded public title, blocked unsafe URL/redirect, classification suggestions preserve explicit values');

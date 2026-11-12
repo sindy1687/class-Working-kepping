@@ -1,0 +1,16 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');let renders=0;const listeners={};
+const c={data:{grades:[{studentId:'s1',classId:'c1',section:'檢測',title:'L1'},{studentId:'s2',classId:'c1',section:'檢測',title:'L2'},{studentId:'s3',classId:'c2',section:'檢測',title:'L99'}]},gClass:'c1',gSec:'檢測',classStudents:cls=>[{id:'s1',classId:'c1',name:'學生一'},{id:'s2',classId:'c1',name:'學生二'},{id:'s3',classId:'c2',name:'他班'}].filter(s=>!cls||s.classId===cls),gClassOf:g=>g.classId,sLabel:s=>s.name,esc:v=>String(v??''),render:()=>renders++,document:{addEventListener:(type,fn)=>listeners[type]=fn}};
+vm.createContext(c);vm.runInContext(fs.readFileSync('js/grade-search-selects.js','utf8'),c);
+const html=c.gradeSearchSelects(false);assert(html.includes('學生一'));assert(!html.includes('他班'));assert(html.includes('L1'));assert(!html.includes('L99'));
+listeners.change({target:{id:'gradeStudentFilter',value:'s2'}});assert.equal(c.gradeSelectedStudents('c1').length,1);assert.equal(c.gradeSearchMatch(c.data.grades[0]),false);
+listeners.change({target:{id:'gradeTitleFilter',value:'L2'}});assert(c.gradeSearchMatch(c.data.grades[1]));
+listeners.click({target:{closest:()=>({dataset:{action:'gClear'}})}});assert.equal(c.gradeSelectedStudents('c1').length,2);assert(c.gradeSearchMatch(c.data.grades[0]));
+assert(!c.gradeSearchSelects(true).includes('gradeTitleFilter'));
+console.log('PASS: student/exam dropdowns scoped to class, selection filters, reset, matrix student selector');
+const app=fs.readFileSync('js/app.js','utf8'),start=app.indexOf('function genericRows(){'),end=app.indexOf('\nfunction ',start+9);
+Object.assign(c,{page:'成績登記',modules:{成績登記:{key:'grades',fields:[]}},filterClass:'c2',filterDate:'',search:'舊搜尋文字',recordClass:r=>r.classId,rowText:()=>{throw Error('grade list must not use old text search');}});
+vm.runInContext(app.slice(start,end),c);
+assert(c.gradeSearchSelects(false,'c2','all').includes('L99'));assert(!c.gradeSearchSelects(false,'c2','all').includes('L1</option>'));
+listeners.change({target:{id:'gradeStudentFilter',value:'s3'}});assert.equal(c.genericRows().length,1);assert.equal(c.genericRows()[0].title,'L99');
+assert(app.includes("page==='成績登記'?gradeSearchSelects(false,filterClass,'all')"));
+console.log('PASS: generic grade list also uses class-scoped selectors and ignores stale free-text search');

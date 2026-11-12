@@ -2,8 +2,11 @@
 /* ---------- Google 雲端同步（透過 Google Apps Script 網頁應用程式） ---------- */
 const CLOUD_URL_DEFAULT='https://script.google.com/macros/s/AKfycby67dKHZ4xfrEyWDu30AmU4nkNbBEahae1XYtgfXtZpFRS9qlda9jTRTUfiILF19xvP/exec';
 const CLOUD_URL_KEY='sindy-cloud-url',CLOUD_SYNCED_KEY='sindy-cloud-synced-v1';
-const CLOUD_EXTRA_LABELS={settings:'系統設定','meta.cleaningJobs':'清潔工作項目','meta.mathAssessments':'數學檢測設定','meta.readingMedia':'閱讀照片','meta.schoolExams':'學校考試設定','meta.schoolSubjectLists':'學校科目','meta.gradePromotionLog':'升年級紀錄'};
+const CLOUD_EXTRA_LABELS={'meta.materialFolders':'教材資料夾',settings:'系統設定','meta.cleaningJobs':'清潔工作項目','meta.mathAssessments':'數學檢測設定','meta.readingMedia':'閱讀照片','meta.schoolExams':'學校考試設定','meta.schoolSubjectLists':'學校科目','meta.gradePromotionLog':'升年級紀錄','meta.mdMedia':'教案圖片'};
 const CLOUD_SETTINGS_ARRAYS=['pins','mathUnits','kistLessons'];
+const CLOUD_STALE_CACHE_KEY='sindy-local-cache-stale';
+function cloudCacheStale(){let stale;try{stale=localStorage.getItem(CLOUD_STALE_CACHE_KEY)==='1';}catch{stale=true;}return stale&&!(typeof bigStore!=='undefined'&&bigStore.loaded&&bigStore.json!=null);}
+function cloudCacheData(){const json=JSON.stringify(data);try{localStorage.setItem(STORE,json);localStorage.removeItem(CLOUD_STALE_CACHE_KEY);if(typeof bigClear==='function')bigClear();return true;}catch{try{localStorage.setItem(CLOUD_STALE_CACHE_KEY,'1');}catch{}if(typeof bigSave==='function'&&bigSave(json))return true;return false;}}
 const cloud={url:'',synced:{},ver:{},conflicts:0,timer:null,retry:null,busy:false,again:false,lastPull:0,state:'',msg:''};
 function cloudLoadSynced(){try{const s=JSON.parse(localStorage.getItem(CLOUD_SYNCED_KEY)||'{}')||{};cloud.synced=s.hash||{};cloud.ver=s.ver||{};}catch{cloud.synced={};cloud.ver={};}}
 cloud.url=CLOUD_URL_DEFAULT;try{const u=localStorage.getItem(CLOUD_URL_KEY);if(u!==null)cloud.url=u;}catch{}cloudLoadSynced();
@@ -20,11 +23,11 @@ function cloudUnpack(files){const s=files.settings&&typeof files.settings==='obj
  for(const [k,v] of Object.entries(files)){if(k==='settings')continue;if(k.startsWith('meta.'))d.meta[k.slice(5)]=v;else d[k]=v;}
  if(d.schema==null)d.schema=1;return d;}
 function cloudSaveSynced(){try{localStorage.setItem(CLOUD_SYNCED_KEY,JSON.stringify({hash:cloud.synced,ver:cloud.ver}));}catch{}}
-function cloudStoredHashes(){const out={};try{const raw=JSON.parse(localStorage.getItem(STORE)||'null');if(raw&&typeof raw==='object')for(const [k,v] of Object.entries(cloudPack(raw)))out[k]=cloudHash(JSON.stringify(v));}catch{}return out;}
+function cloudStoredHashes(){const out={};try{const raw=JSON.parse((typeof bigCurrentRaw==='function'?bigCurrentRaw():localStorage.getItem(STORE))||'null');if(raw&&typeof raw==='object')for(const [k,v] of Object.entries(cloudPack(raw)))out[k]=cloudHash(JSON.stringify(v));}catch{}return out;}
 function cloudMerge(lv,rv){const rec=a=>Array.isArray(a)&&a.every(x=>x&&typeof x==='object'&&typeof x.id==='string');
  if(rec(lv)&&rec(rv)){const lm=new Map(lv.map(x=>[x.id,x])),seen=new Set(),out=rv.map(x=>{seen.add(x.id);return lm.get(x.id)||x;});lv.forEach(x=>{if(!seen.has(x.id))out.push(x);});return out;}
  if(lv&&rv&&typeof lv==='object'&&typeof rv==='object'&&!Array.isArray(lv)&&!Array.isArray(rv))return {...rv,...lv};return lv;}
-function cloudDirty(){const packed=cloudPack(data),out={};for(const [k,v] of Object.entries(packed)){const s=JSON.stringify(v),h=cloudHash(s);if(cloud.synced[k]!==h)out[k]={s,h};}return out;}
+function cloudDirty(){const packed=cloudPack(data),out={};for(const [k,v] of Object.entries(packed)){if(['meta.materialFolders','meta.weeklyNewsSync'].includes(k))continue;const s=JSON.stringify(v),h=cloudHash(s);if(cloud.synced[k]!==h)out[k]={s,h};}return out;}
 function cloudTime(){return new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});}
 function cloudSetState(state,msg){cloud.state=state;cloud.msg=msg||'';if(state==='error')status('☁ '+cloud.msg,true);else if(msg)status('☁ '+msg);const el=document.getElementById('cloudState');if(el)el.innerHTML=cloudStateHtml();}
 function cloudStateHtml(){if(!cloud.url)return '尚未連接 Google 雲端，資料只存在這個瀏覽器。';return (cloud.state==='error'?'<span class="error">⚠ ':'☁ ')+esc(cloud.msg||'已連接 Google 雲端')+(cloud.state==='error'?'</span>':'');}
@@ -36,6 +39,7 @@ async function cloudFetch(opts){const ctl=new AbortController(),t=setTimeout(()=
  catch(e){throw e.name==='AbortError'?Error('連線逾時'):e;}finally{clearTimeout(t);}}
 
 async function cloudPull(opts={}){
+ if(typeof bigBoot!=='undefined'&&!bigStore.loaded){try{await bigBoot;}catch{}}
  if(!cloud.url||cloud.busy)return;if($('editor').open&&!opts.force)return;
  cloud.busy=true;cloudSetState('busy','正在從雲端下載…');
  try{const j=await cloudFetch(),remote=j.files||{},rkeys=Object.keys(remote);cloud.lastPull=Date.now();
@@ -49,13 +53,13 @@ async function cloudPull(opts={}){
   for(const k of keys){const r=remote[k],lv=local[k];
    if(!r){if(lv!==undefined)merged[k]=lv;delete cloud.ver[k];continue;}
    if(!useRemote){if(lv!==undefined)merged[k]=lv;cloud.ver[k]=r.ver;continue;}
-   const dirty=!opts.replace&&!first&&lv!==undefined&&stored[k]!==undefined&&cloud.synced[k]!==stored[k];
+   const dirty=!['meta.materialFolders','meta.weeklyNewsSync'].includes(k)&&!cloudCacheStale()&&!opts.replace&&!first&&lv!==undefined&&stored[k]!==undefined&&cloud.synced[k]!==stored[k];
    if(!dirty){merged[k]=r.data;cloud.synced[k]=cloudHash(JSON.stringify(r.data));cloud.ver[k]=r.ver;}
-   else if(r.ver===cloud.ver[k])merged[k]=lv;
+   else if(r.ver===cloud.ver[k]&&k!=='attachments')merged[k]=lv;
    else{merged[k]=cloudMerge(lv,r.data);cloud.ver[k]=r.ver;kept++;}}
   const next=validateImport(cloudUnpack(merged));
   data=next;cloudSaveSynced();
-  try{localStorage.setItem(STORE,JSON.stringify(data));}catch{}
+  cloudCacheData();
   render();cloud.busy=false;
   cloudSetState('ok','已從雲端下載 · '+cloudTime()+(kept?'（已合併 '+kept+' 個檔案中尚未上傳的修改）':''));
   cloudPush(true);}

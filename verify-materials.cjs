@@ -1,4 +1,4 @@
-const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
+﻿const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
 const nodes={content:{}};
 const ctx=vm.createContext({
  data:{classes:[{id:'c1',name:'文樂數學'}],attachments:[
@@ -12,10 +12,17 @@ const ctx=vm.createContext({
  esc:s=>String(s??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'),
  head:()=>'',$:id=>nodes[id],render(){},document:{addEventListener(){}},
 });
-vm.runInContext(fs.readFileSync('js/materials.js','utf8')+'\nglobalThis.__m={c:v=>matClass=v,s:v=>matSubject=v,t:v=>matCat=v,q:v=>matQuery=v};',ctx);
+vm.runInContext(fs.readFileSync('js/material-stage.js','utf8'),ctx);
+vm.runInContext(fs.readFileSync('js/material-list.js','utf8'),ctx);
+vm.runInContext(fs.readFileSync('js/material-english.js','utf8'),ctx);
+vm.runInContext(fs.readFileSync('js/material-formats.js','utf8'),ctx);
+vm.runInContext(fs.readFileSync('js/material-folders.js','utf8'),ctx);
+vm.runInContext(fs.readFileSync('js/materials.js','utf8')+'\nglobalThis.__m={c:v=>matClass=v,s:v=>matSubject=v,t:v=>matCat=v,q:v=>matQuery=v,stage:v=>matStage=v};',ctx);
 ctx.materialsPage();
 let html=nodes.content.innerHTML;
-assert.ok(html.includes('L19 學習單')&&html.includes('KIST 影片'),'cards render');
+assert.ok(html.includes('L19 學習單')&&html.includes('KIST 影片'),'list rows render');
+assert.ok(html.includes('class="material-list"')&&!html.includes('ul-card'),'table replaces cards');
+for(const section of ['英文','數學','閱讀','PASSION','線上'])assert.ok(html.includes('data-mat-subject="'+section+'"'));
 assert.ok(html.includes('文樂數學'),'class name shown');
 assert.ok(html.includes('通用教材'),'no-class material labelled 通用');
 assert.ok(!html.includes('javascript:alert'),'non-http url never becomes a link');
@@ -32,3 +39,16 @@ assert.ok(!html.includes('L19 學習單')&&html.includes('KIST 影片'),'subject
 ctx.__m.s('');ctx.__m.t('其他');ctx.materialsPage();html=nodes.content.innerHTML;
 assert.ok(html.includes('壞連結'),'legacy record falls into 其他 category');
 console.log('PASS: materials page renders, class/subject/category filters, safe URLs');
+const importPath='教材匯入/教材庫-已整理.json';
+if(fs.existsSync(importPath)){
+ ctx.data.attachments=JSON.parse(fs.readFileSync(importPath,'utf8'));ctx.__m.c('');ctx.__m.s('');ctx.__m.t('');ctx.__m.q('');ctx.materialsPage();
+ html=nodes.content.innerHTML;assert.equal((html.match(/<tr class="material-list-row">/g)||[]).length,60);assert.ok(html.includes('data-mat-page'));assert.ok(html.includes('1551'));
+ ctx.__m.q('單字');ctx.materialsPage();assert.ok((nodes.content.innerHTML.match(/<tr class="material-list-row">/g)||[]).length<=60);
+ console.log('PASS: imported 1551 materials render at most 60 list rows per page; search remains available');
+ if(fs.existsSync('教材匯入/教材庫-已分學段.json')){
+  ctx.data.attachments=JSON.parse(fs.readFileSync('教材匯入/教材庫-已分學段.json','utf8'));ctx.__m.q('');
+  for(const [stage,count] of [['國小',792],['國中',643],['共用',12],['待確認',104]]){ctx.__m.stage(stage);assert.equal(ctx.materialRows().length,count);ctx.materialsPage();assert.ok(!nodes.content.innerHTML.includes('data-mat-stage'));}
+  console.log('PASS: elementary/junior/shared/unknown filters match cloud classification');
+ }
+}
+

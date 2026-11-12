@@ -1,0 +1,55 @@
+/* 清潔月輪值：深海藍與薄荷綠，保持文字清楚。 */
+.cw-workspace{--cw-ink:#173b46;--cw-text:#294e58;--cw-muted:#526d76;--cw-line:#cbdde1;--cw-soft:#e9f3f4;--cw-accent:#217b82;--cw-accent-d:#185b64;--cw-amber:#f7d99a}
+.cw-workspace .cw-board{border:1px solid #cbdde1;border-radius:20px;background:#fff;box-shadow:0 8px 28px #214e5810;overflow:hidden}
+.cw-workspace .cw-band{background:linear-gradient(115deg,#234c65,#217b82);padding:22px 26px}
+.cw-workspace .cw-band h2{color:#fff;font-size:23px;letter-spacing:.4px}
+.cw-workspace .cw-eyebrow{color:#cceff0}
+.cw-workspace .cw-band p,.cw-workspace .cw-progress>span,.cw-workspace .cw-progress small{color:#deeff3}
+.cw-workspace .cw-progress strong{color:#fff}
+.cw-workspace .cw-progress-track{background:#ffffff30}
+.cw-workspace .cw-progress-track i{background:#a6e4d0}
+.cw-workspace .cw-controls{background:#f1f7f8;border-bottom:1px solid #cbdde1;padding:16px 22px}
+.cw-workspace .cw-field,.cw-workspace .cw-field>span{color:#294e58;font-weight:600}
+.cw-workspace .cw-controls select,.cw-workspace .cw-controls input[type=month]{background:#fff;border:1px solid #b5cdd3;color:#244650;border-radius:10px;height:40px;padding:7px 11px;font-size:14px;color-scheme:light}
+.cw-workspace .cw-week-nav input[type=month]{width:170px}
+.cw-workspace .cw-week-nav button{background:#fff;border:1px solid #b5cdd3;color:#216570;height:40px;border-radius:10px}
+.cw-workspace .clean-job-settings summary{border-color:#8bb3bb;background:#fff;color:#26636d}
+.cw-workspace .cw-table thead th{background:#e4eff2;color:#294f60;border-color:#c6d9de;padding-top:12px;padding-bottom:12px}
+.cw-workspace .cw-job-number{background:#d0e5e8;color:#28616d;border-radius:5px}
+.cw-workspace .cw-table tbody th{background:#f4f8fa;color:#254957;border-color:#cbdde1}
+.cw-workspace .cw-table tbody th>span{color:#536f7b}
+.cw-workspace .cw-table tbody td{border-color:#dce8eb;background:#fff;vertical-align:middle;padding-top:10px;padding-bottom:10px}
+.cw-workspace .cw-table tbody tr:nth-child(even)>th,.cw-workspace .cw-table tbody tr:nth-child(even)>td{background:#f1f7f8}
+.cw-workspace .cw-table tbody tr:hover>td{background:#e8f3f5}
+.cw-workspace .cw-table tbody tr>td.cw-today-col{background:#e1f4ef;box-shadow:inset 0 2px #8bcdbd,inset 0 -2px #8bcdbd}
+.cw-workspace .cw-table tbody th.cw-today{background:#217b82;border-color:#217b82}
+.cw-workspace .cw-table tbody th.cw-today>span,.cw-workspace .cw-table tbody th.cw-today>strong{color:#fff}
+.cw-workspace .cw-person{background:#fff;border-color:#accbd1;border-radius:9px;box-shadow:0 2px 4px #244e5910;min-height:35px}
+.cw-workspace .cw-person button{color:#244d5b}
+.cw-workspace .cw-person input{border-color:#548892;accent-color:#217b82}
+.cw-workspace .cw-person.is-done{background:#d9f0e5;border-color:#8cbfa6;box-shadow:none}
+.cw-workspace .cw-person.is-done button{color:#245c43}
+.cw-workspace .cw-person.is-done input{background:#287652;border-color:#287652}
+.cw-workspace .cw-person.is-done input:checked::after{color:#fff}
+.cw-workspace .cw-pending{background:#f1f5f7;color:#526a77;border-color:#cddde3}
+.cw-workspace .cw-cell-off{background:repeating-linear-gradient(135deg,#f3f7f8 0 7px,#e9f0f2 7px 14px)!important;color:#526d76}
+.cw-workspace .cw-days{background:#f0f6f8}
+.cw-workspace .cw-day{border-color:#c2d8de;box-shadow:0 3px 12px #244e590b}
+.cw-workspace .cw-day>header{background:#e5f0f3;border-color:#cbdde1}
+.cw-workspace .cw-day.is-today>header{background:#217b82;border-color:#217b82}
+.cw-workspace .cw-day li{border-color:#e0eaed}
+.cw-workspace .cw-day li:nth-child(even){background:#f4f8fa}
+.cw-workspace .cw-board-foot{background:#f5f9fa;border-color:#d4e3e7;color:#435f69;padding:13px 20px}
+.cw-workspace .cw-note{color:#526b75;line-height:1.8}
+.cw-workspace .primary{box-shadow:0 3px 10px #217b8224}
+.cw-workspace .cw-more>summary{background:#fff;border-color:#b8cfd6;color:#315a68}
+.cw-workspace button:focus-visible,.cw-workspace input:focus-visible,.cw-workspace select:focus-visible,.cw-workspace summary:focus-visible{outline:3px solid #4599a6;outline-offset:3px}
+@media(max-width:600px){.cw-workspace .cw-band{padding:18px 16px}.cw-workspace .cw-band h2{font-size:20px}.cw-workspace .cw-controls{padding:14px}.cw-workspace .cw-week-nav input[type=month]{width:165px}.cw-workspace .cw-person{min-height:38px}}
+/* 今天的日期欄優先於交錯列及滑鼠經過的底色。 */
+.cw-workspace .cw-table tbody tr>th.cw-today,
+.cw-workspace .cw-table tbody tr:nth-child(even)>th.cw-today,
+.cw-workspace .cw-table tbody tr:hover>th.cw-today{background:#16475c;color:#fff;border-color:#16475c}
+.cw-workspace .cw-table tbody tr>th.cw-today>span,
+.cw-workspace .cw-table tbody tr>th.cw-today>strong{color:#fff}
+.cw-workspace .cw-table tbody tr>th.cw-today>small{background:#ffe3a3;color:#46320b;font-weight:800;opacity:1;padding:3px 7px}
+.cw-workspace .cw-day.is-today .cw-day-date>em{background:#ffe3a3;color:#46320b}

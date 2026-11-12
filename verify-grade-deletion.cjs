@@ -1,0 +1,13 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+let backups=0,saves=0,allow=true;
+const ctx={data:{grades:[{id:'a'},{id:'b'},{id:'c'}],students:[{id:'s'}],journals:[{id:'j'}]},document:{addEventListener(){}},confirm:()=>allow,exportData(){assert.equal(ctx.data.grades.length,3);backups++;},changed(){saves++;},render(){},toast(){}};
+vm.createContext(ctx);vm.runInContext(fs.readFileSync('js/grade-deletion.js','utf8'),ctx);
+allow=false;assert.equal(ctx.deleteRegisteredGrades(['a']),false);assert.equal(backups,0);assert.equal(ctx.data.grades.length,3);
+allow=true;assert.equal(ctx.deleteRegisteredGrades([]),false);assert.equal(backups,0);
+assert.equal(ctx.deleteRegisteredGrades(['a','c']),true);assert.equal(ctx.data.grades.length,1);assert.equal(ctx.data.grades[0].id,'b');assert.equal(backups,1);assert.equal(saves,1);assert.equal(ctx.data.students.length,1);assert.equal(ctx.data.journals.length,1);
+console.log('Grade deletion checks passed');
+Object.assign(ctx,{gSec:'數學檢測',gClass:'c1',gClassOf:g=>g.classId,className:()=> '數學班',mathAssessmentSettings:()=>ctx.data.meta.mathAssessments.c1});
+ctx.data.meta={mathAssessments:{c1:[{title:'5-1'},{title:'5-2'}],c2:[{title:'5-1'}]}};
+ctx.data.grades=[{id:'1',title:'5-1',section:'數學檢測',classId:'c1'},{id:'2',title:'5-1',section:'數學檢測',classId:'c2'},{id:'3',title:'5-1',section:'檢測',classId:'c1'}];
+assert.equal(ctx.deleteGradeUnit('5-1'),true);assert.equal(ctx.data.grades.length,2);assert.equal(ctx.data.meta.mathAssessments.c1.length,1);assert.equal(ctx.data.meta.mathAssessments.c2.length,1);
+console.log('Unit deletion preserves other classes and subjects');
