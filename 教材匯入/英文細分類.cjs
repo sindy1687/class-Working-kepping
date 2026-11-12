@@ -1,0 +1,4 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');const c={document:{addEventListener(){}}};vm.createContext(c);vm.runInContext(fs.readFileSync('js/material-english.js','utf8'),c);
+const before=Buffer.from(fs.readFileSync('教材匯入/英文細分類前.base64','utf8').trim(),'base64').toString('utf8'),rows=JSON.parse(before),books={},papers={};fs.writeFileSync('教材匯入/英文細分類前.json',before);
+let changed=0;for(const row of rows){if(row.subject!=='英文')continue;const p=c.englishMaterialParts(row);if(!row.bookLevel&&p.book!=='待確認冊別'){row.bookLevel=p.book;changed++;}if(!row.paperNumber&&p.paper!=='未標卷別')row.paperNumber=p.paper;books[p.book]=(books[p.book]||0)+1;papers[p.paper]=(papers[p.paper]||0)+1;}
+assert.equal(new Set(rows.map(r=>r.id)).size,rows.length);fs.writeFileSync('教材匯入/教材庫-英文細分類.json',JSON.stringify(rows));console.log(JSON.stringify({total:rows.length,books,papers}));
