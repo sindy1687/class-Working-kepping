@@ -1,8 +1,8 @@
 'use strict';
 const groups=[['工作總覽',['總覽']],['學生與班級',['班級與學生','班級資料','轉班紀錄']],['日常教學',['學生週誌','每週觀察','學生進度','出席總覽','閱讀統計','個人閱讀清單','課後教學筆記','教案']],['成績與評量',['成績登記','學校成績']],['特殊任務',['國小認證與特殊任務']],['暑期專區',['暑期出席與便當','暑期課表','暑期學生課表','暑期學生進度','暑期老師訂餐']],['班務與行政',['值日生','清潔工作','輪值排班','行政','活動']],['資源與附件',['常用網站','教材庫']],['課表與資料設定',['行事曆','老師與課表','資料匯入匯出']]];
 const DEFAULT_CLASSES=['新來義','文樂','丹林','來中'];
-const ATT=['準時','遲到','早退','缺席','病假','事假','公假'];
-const ATT_CODE={準時:['on','✓'],出席:['on','✓'],遲到:['late','遲'],早退:['early','早'],缺席:['absent','缺'],病假:['leave','病'],事假:['leave','事'],公假:['leave','公'],請假:['leave','假']};
+const ATT=['準時','遲到','早退','缺席','病假','事假','公假','長假'];
+const ATT_CODE={準時:['on','✓'],出席:['on','✓'],遲到:['late','遲'],早退:['early','早'],缺席:['absent','缺'],病假:['leave','病'],事假:['leave','事'],公假:['leave','公'],請假:['leave','假'],長假:['leave','長']};
 const READ_TYPES=['KIST','大量閱讀','國內外大事','文字書','繪本','橋樑書'];
 const READ_UNIT={KIST:'篇',大量閱讀:'本',國內外大事:'則',文字書:'本',繪本:'本',橋樑書:'本'};
 const LEGACY_READ={'KIST':'KIST','大量閱讀':'大量閱讀','繪本 A':'繪本','繪本':'繪本','橋梁書 B':'橋樑書','橋樑書':'橋樑書','文字書 C':'文字書','文字書':'文字書','國內外大事':'國內外大事'};
@@ -12,7 +12,7 @@ const SUBJECTS='select:數學|國語|英文|自然|社會|其他';
 const GRADES='select:三年級|四年級|五年級|六年級|七年級|八年級|九年級';
 function canonicalGrade(value){const text=String(value??'').normalize('NFKC').trim();if(/高中|高[一二三1-3]/.test(text))return text;const n=gradeNum(text);return n>=1&&n<=9?'一二三四五六七八九'[n-1]+'年級':text;}
 const modules={
- '班級資料':{key:'classes',desc:'建立數學、英文、PASSION、閱讀班級，設定差異化或齊一教學，以及實體或線上上課。',fields:[F('name','班級名稱','text',true),F('kind','班級類型','select:數學|英文|PASSION|閱讀|其他',true),F('mode','教學模式','select:差異化教學|齊一教學',true),F('online','上課方式','select:實體|線上',true),F('teacher','老師'),F('weekdays','上課星期（例：一、三）'),F('schedule','上課時間（例：18:30–20:30）'),F('room','教室'),F('meetUrl','線上教室連結（Google Meet、Zoom…）','url'),F('gradeRule','套用年級排課規則（週一至週四 3–6、週五 7–9 年級）','checkbox'),F('note','備註','textarea')]},
+ '班級資料':{key:'classes',desc:'建立數學、英文、PASSION、閱讀班級，設定差異化或齊一教學，以及實體或線上上課。',fields:[F('name','班級名稱','text',true),F('kind','班級類型','select:數學|英文|PASSION|閱讀|其他',true),F('mode','教學模式','select:差異化教學|齊一教學',true),F('online','上課方式','select:實體|線上',true),F('teacher','老師'),F('weekdays','上課星期（例：一、三）'),F('schedule','上課時間（例：18:30–20:30）'),F('start','開課日期','date'),F('end','結業日期','date'),F('room','教室'),F('meetUrl','線上教室連結（Google Meet、Zoom…）','url'),F('gradeRule','套用年級排課規則（週一至週四 3–6、週五 7–9 年級）','checkbox'),F('note','備註','textarea')]},
  '班級與學生':{key:'students',desc:'學生編號可隨時修改；轉班請到「轉班紀錄」新增，會同步更新目前班級。',fields:[F('number','學生編號'),F('name','學生姓名','text',true),F('classId','主要班級','class',true),F('classIds','同時就讀其他班級','classes'),F('grade','年級',GRADES,true),F('school','學校'),F('contact','聯絡資訊'),F('archived','已離班（不列入點名與名單）','checkbox'),F('note','備註','textarea')]},
  '轉班紀錄':{key:'transfers',desc:'保留每一次班級異動，也同步更新學生目前班級。',fields:[F('studentId','學生','student',true),F('date','轉班日期','date',true),F('fromClass','原班級','class',true),F('toClass','新班級','class',true),F('note','轉班原因','textarea')]},
  '學生週誌':{key:'journals',desc:'依班級與日期記錄出席、進度清單、閱讀與觀察。',fields:[F('studentId','學生','student',true),F('classId','班級','class'),F('date','日期','date',true),F('subject','科目／主題'),F('content','學習內容','textarea'),F('note','行為／學習觀察','textarea'),F('next','後續協助','textarea')]},
@@ -60,6 +60,7 @@ function normalize(d){
  for(const m of Object.values(modules))if(!Array.isArray(d[m.key]))d[m.key]=[];
  if(!Array.isArray(d.pins))d.pins=[];if(!Array.isArray(d.mathUnits))d.mathUnits=[];if(!Array.isArray(d.kistLessons))d.kistLessons=[];if(!d.meta||typeof d.meta!=='object'||Array.isArray(d.meta))d.meta={lastExport:''};
  if(!d.meta.summerMode||typeof d.meta.summerMode!=='object'||Array.isArray(d.meta.summerMode))d.meta.summerMode={on:false,from:'',to:''};
+ if(!Array.isArray(d.meta.holidayBlocked))d.meta.holidayBlocked=[];
  d.summer.forEach(r=>{if(!r)return;if(r.am===undefined&&r.status)r.am=r.status;if(r.pm===undefined)r.pm='';});
  d.attendance.forEach(r=>{if(!r)return;if(r.status==='出席')r.status='準時';if(!r.time&&r.note){const m=String(r.note).match(/(?:到班|離開)\s*(\d{1,2}:\d{2})/);if(m){r.time=m[1].padStart(5,'0');r.note=String(r.note).replace(m[0],'').replace(/^[\s　]+|[\s　]+$/g,'');}}});
  d.classes.forEach(c=>{if(!c||typeof c!=='object')return;if(c.gradeRule===undefined)c.gradeRule=true;if(!c.kind)c.kind=kindFromName(c.name);if(!c.mode)c.mode='差異化教學';if(!c.online)c.online=onlineFromName(c.name);});
@@ -119,13 +120,13 @@ function calFor(date,cid){if(!data||!Array.isArray(data.calendar))return null;co
  const open=hits.find(e=>e.kind==='補課'&&(!e.classId||e.classId===cid));if(open)return {open:true,...open};return hits.find(e=>e.kind!=='補課'&&(!e.classId||e.classId===cid))||null;}
 // 放假標示只套用原本應上課的日期；學生列另計年級規則。
 function summerOn(date){const s=data?.meta?.summerMode;if(!s||!s.on)return false;if(!date)return true;if(s.from&&date<s.from)return false;if(s.to&&date>s.to)return false;return true;}
-function scheduledNormally(c,s,date){const d=weekday(date),w=parseWeekdays(c?.weekdays);if(summerOn(date))return w.length?w.includes(d):d>=1&&d<=5;if(w.length){if(!w.includes(d))return false;}else if(d===0||d===6)return false;if(c&&!c.gradeRule)return true;const g=gradeNum(s?.grade);if(!g)return true;return d===5?g>=7&&g<=9:g>=3&&g<=6;}
+function scheduledNormally(c,s,date){const d=weekday(date),w=parseWeekdays(c?.weekdays);if(c){if(c.start&&date<c.start)return false;if(c.end&&date>c.end)return false;}if(summerOn(date))return w.length?w.includes(d):d>=1&&d<=5;if(w.length){if(!w.includes(d))return false;}else if(d===0||d===6)return false;if(c&&!c.gradeRule)return true;const g=gradeNum(s?.grade);if(!g)return true;return d===5?g>=7&&g<=9:g>=3&&g<=6;}
 const holidayOff=(date,cid,s)=>{const ids=cid?[cid]:s?[s.classId,...(s.classIds||[])].filter(Boolean):data.classes.map(c=>c.id);if(!ids.length){const h=calFor(date,'');return scheduledNormally(null,s,date)&&h&&!h.open?h:null;}for(const id of ids){const c=data.classes.find(c=>c.id===id)||null;if(!scheduledNormally(c,s,date))continue;const h=calFor(date,id);if(h&&!h.open)return h;}return null;};
 const holTag=h=>h?'🎌 '+(h.kind==='停課'?'停課｜':'')+h.title:'';
-function classAllows(c,s,date){const hc=calFor(date,c?.id);if(hc&&!hc.open)return false;if(hc&&hc.open){if(summerOn(date))return true;const g=gradeNum(s?.grade);if(c&&!c.gradeRule||!g)return true;const d0=weekday(date);return d0===5?g>=7&&g<=9:g>=3&&g<=6;}return scheduledNormally(c,s,date);}
+function classAllows(c,s,date){if(c&&((c.start&&date<c.start)||(c.end&&date>c.end)))return false;const hc=calFor(date,c?.id);if(hc&&!hc.open)return false;if(hc&&hc.open){if(summerOn(date))return true;const g=gradeNum(s?.grade);if(c&&!c.gradeRule||!g)return true;const d0=weekday(date);return d0===5?g>=7&&g<=9:g>=3&&g<=6;}return scheduledNormally(c,s,date);}
 // 排課規則：班級可設定上課星期；勾選年級規則時，週一至週四 3–6 年級、週五 7–9 年級。未填年級者不受年級限制。
 function allowedOn(s,date,cid){const ids=cid?[cid]:[s?.classId,...(s?.classIds||[])].filter(Boolean);if(!ids.length)return classAllows(null,s,date);return ids.some(id=>classAllows(data.classes.find(c=>c.id===id)||null,s,date));}
-function ruleText(date,cid){const d=weekday(date),c=cid&&data.classes.find(x=>x.id===cid);if(summerOn(date)){const sw=parseWeekdays(c?.weekdays);if(sw.length&&!sw.includes(d))return '本班週'+WEEK[d]+'不上課（上課日：週'+sw.map(i=>WEEK[i]).join('、')+'）';return '暑期模式：週一至週五每天上課（假日除外）';}if(c){const w=parseWeekdays(c.weekdays),wt=w.map(i=>WEEK[i]).join('、');if(w.length&&!w.includes(d))return '本班週'+WEEK[d]+'不上課（上課日：週'+wt+'）';if(!c.gradeRule)return w.length?'上課日：週'+wt:'不限年級';}return d===0||d===6?'週末不排課':d===5?'週五：7–9 年級':'週一至週四：3–6 年級';}
+function ruleText(date,cid){const d=weekday(date),c=cid&&data.classes.find(x=>x.id===cid);if(c&&(c.start&&date<c.start))return '尚未開課（開課日 '+c.start+'）';if(c&&(c.end&&date>c.end))return '已結業（結業日 '+c.end+'）';if(summerOn(date)){const sw=parseWeekdays(c?.weekdays);if(sw.length&&!sw.includes(d))return '本班週'+WEEK[d]+'不上課（上課日：週'+sw.map(i=>WEEK[i]).join('、')+'）';return '暑期模式：週一至週五每天上課（假日除外）';}if(c){const w=parseWeekdays(c.weekdays),wt=w.map(i=>WEEK[i]).join('、');if(w.length&&!w.includes(d))return '本班週'+WEEK[d]+'不上課（上課日：週'+wt+'）';if(!c.gradeRule)return w.length?'上課日：週'+wt:'不限年級';}return d===0||d===6?'週末不排課':d===5?'週五：7–9 年級':'週一至週四：3–6 年級';}
 const normTitle=t=>String(t||'').normalize('NFKC').replace(/\s+/g,'').toLowerCase();
 function syncSummerAttendance(r,prev){
  if(prev&&(prev.studentId!==r.studentId||prev.date!==r.date)){const i=data.attendance.findIndex(a=>a.studentId===prev.studentId&&a.date===prev.date&&a.summer);if(i>=0)data.attendance.splice(i,1);}
@@ -137,7 +138,7 @@ function syncSummerAttendance(r,prev){
  data.attendance.push({id:uid(),studentId:r.studentId,date:r.date,status:st,classId:r.classId||student(r.studentId)?.classId||'',note,time:'',summer:true});}
 function rowText(r){return [...Object.values(r).map(v=>Array.isArray(v)?v.map(x=>x&&typeof x==='object'?Object.values(x).join(' '):x).join(' '):v),r.studentId?sLabel(student(r.studentId)):'',r.classId?className(r.classId):'',r.studentId?className(student(r.studentId)?.classId):''].join(' ').toLowerCase();}
 function classSelect(id,value,all){return '<select id="'+id+'">'+(all?'<option value="">全部班級</option>':'')+data.classes.map(c=>'<option value="'+esc(c.id)+'" '+(c.id===value?'selected':'')+'>'+esc(c.name)+'</option>').join('')+'</select>';}
-function head(title,desc,actions=''){if(['行事曆','出席總覽','學生週誌','值日生'].includes(title))actions='<button data-action="customHoliday">＋ 自訂放假</button>'+actions;return '<div class="pagehead"><div><div class="eyebrow">SINDY CLASSROOM'+(summerOn()?' <span class="summer-badge">暑期模式</span>':'')+'</div><h1>'+esc(title)+'</h1><p class="muted">'+esc(desc)+'</p></div><div class="actions">'+actions+'</div></div>';}
+function head(title,desc,actions=''){if(['行事曆','出席總覽','學生週誌','值日生'].includes(title))actions='<button data-action="studentLeave">＋ 學生長假</button><button data-action="customHoliday">＋ 自訂放假</button>'+actions;return '<div class="pagehead"><div><div class="eyebrow">SINDY CLASSROOM'+(summerOn()?' <span class="summer-badge">暑期模式</span>':'')+'</div><h1>'+esc(title)+'</h1><p class="muted">'+esc(desc)+'</p></div><div class="actions">'+actions+'</div></div>';}
 const card=(label,n,desc)=>'<div class="card"><span>'+esc(label)+'</span><strong>'+n+'</strong><small>'+esc(desc)+'</small></div>';
 function setAttendance(sid,date,st,cid){const i=data.attendance.findIndex(r=>r.studentId===sid&&r.date===date);if(!st){if(i>=0)data.attendance.splice(i,1);return null;}if(i>=0){data.attendance[i].status=st;return data.attendance[i];}const r={id:uid(),studentId:sid,date,status:st,classId:cid||student(sid)?.classId||'',note:''};data.attendance.push(r);return r;}
 const noClasses=()=>'<section class="panel empty"><p>還沒有班級。</p><button class="primary" data-action="presetClasses">建立新來義、文樂、丹林、來中</button></section>';
@@ -177,7 +178,7 @@ function classesPage(){const counts=Object.fromEntries(C_KINDS.map(k=>[k,data.cl
  const chips='<div class="kchips" role="group" aria-label="班級類型">'+[['all','全部',data.classes.length],...C_KINDS.filter(k=>k!=='其他'||counts[k]).map(k=>[k,k,counts[k]])].map(([k,l,n])=>'<button data-ckind="'+k+'" aria-pressed="'+(cKind===k)+'">'+(k==='all'?'':'<span class="kdot k-'+C_KIND_CLS[k]+'"></span>')+esc(l)+' <small>'+n+'</small></button>').join('')+'</div>';
  const card=c=>{const sts=classStudents(c.id),todayN=sts.filter(s=>allowedOn(s,t,c.id)).length,wd=parseWeekdays(c.weekdays);
   return '<article class="ccard k-'+(C_KIND_CLS[c.kind]||'other')+'"><div class="ccard-head"><h3>'+esc(c.name)+'</h3><div class="cbadges">'+classBadges(c)+'</div></div>'+
-  '<dl class="cmeta"><dt>老師</dt><dd>'+esc(c.teacher||'—')+'</dd><dt>上課</dt><dd>'+esc(classWhen(c)||'—')+'</dd><dt>'+(c.online==='線上'?'線上教室':'教室')+'</dt><dd>'+(c.online==='線上'?meetLink(c):esc(c.room||'—'))+'</dd><dt>學生</dt><dd>'+sts.length+' 位'+(wd.length&&!wd.includes(weekday(t))?'':' · 今日 '+todayN+' 位')+'</dd></dl>'+
+  '<dl class="cmeta"><dt>老師</dt><dd>'+esc(c.teacher||'—')+'</dd><dt>上課</dt><dd>'+esc(classWhen(c)||'—')+'</dd>'+(c.start||c.end?'<dt>期間</dt><dd>'+esc((c.start||'?')+' ～ '+(c.end||'進行中'))+(c.end&&c.end<t?' <span class="badge">已結業</span>':'')+'</dd>':'')+'<dt>'+(c.online==='線上'?'線上教室':'教室')+'</dt><dd>'+(c.online==='線上'?meetLink(c):esc(c.room||'—'))+'</dd><dt>學生</dt><dd>'+sts.length+' 位'+(wd.length&&!wd.includes(weekday(t))?'':' · 今日 '+todayN+' 位')+'</dd></dl>'+
   '<p class="help">'+(c.mode==='齊一教學'?'齊一教學：全班同一份進度，可一次同步全班週誌。':'差異化教學：每位學生各自進度，自動延續上次未完成項目。')+(c.online==='線上'?' 線上班級不排值日生與清潔工作。':'')+'</p>'+
   '<div class="cfoot"><div class="actions"><button class="primary" data-cgo="journal" data-cid="'+esc(c.id)+'">週誌</button><button data-cgo="attendance" data-cid="'+esc(c.id)+'">出席</button><button data-cgo="students" data-cid="'+esc(c.id)+'">學生名單</button></div><div class="actions"><button class="iconbtn" data-edit="'+esc(c.id)+'">編輯</button><button class="iconbtn danger" data-delete="'+esc(c.id)+'" aria-label="移除班級 '+esc(c.name)+'">移除</button></div></div></article>';};
  $('content').innerHTML=head('班級資料',modules['班級資料'].desc,act)+chips+(list.length?'<div class="ccards">'+list.map(card).join('')+'</div>':'<div class="panel empty">'+(data.classes.length?'沒有這個類型的班級。':'還沒有班級，按右上角「建立班級」開始。')+'</div>');}
@@ -280,11 +281,16 @@ function submitGeneric(){const m=modules[page],old=data[m.key].find(r=>r.id===ed
  if(['出席總覽','暑期出席與便當'].includes(page)&&data[m.key].some(r=>r.id!==row.id&&r.studentId===row.studentId&&r.date===row.date)){toast('這位學生當天已有紀錄，請編輯原紀錄。');return;}
  if(m.key==='summer')syncSummerAttendance(row,old);
  if(old)Object.assign(old,row);else data[m.key].push(row);$('editor').close();changed();render();}
+function removeCalendarEntry(id){const r=data.calendar.find(x=>x.id===id);if(!r)return false;
+ if(r.kind==='國定假日'&&!r.classId){if(!Array.isArray(data.meta.holidayBlocked))data.meta.holidayBlocked=[];
+  const end=r.end&&r.end>=r.date?r.end:r.date;
+  for(let d=r.date;d<=end;d=addDays(d,1)){if(!data.meta.holidayBlocked.includes(d))data.meta.holidayBlocked.push(d);if(data.meta.holidayBlocked.length>400)break;}}
+ data.calendar=data.calendar.filter(x=>x.id!==id);return true;}
 function removeRow(id){const m=modules[page];if(page==='轉班紀錄'){toast('轉班歷史保留供查詢，請新增轉班紀錄修正。');return;}
  if(m.key==='classes'&&data.students.some(s=>s.classId===id)){toast('班級仍有學生，請先轉班。');return;}
  if(m.key==='students'&&Object.values(data).some(l=>Array.isArray(l)&&l.some(r=>r&&r.studentId===id))){toast('學生已有關聯紀錄，請保留學生資料（可修改姓名或編號）。');return;}
  if(m.key==='summer'){const r=data.summer.find(x=>x.id===id);if(r){const i=data.attendance.findIndex(a=>a.studentId===r.studentId&&a.date===r.date&&a.summer);if(i>=0)data.attendance.splice(i,1);}}
- if(!confirm('確定移除此紀錄？建議先匯出備份。'))return;data[m.key]=data[m.key].filter(r=>r.id!==id);changed();render();}
+ if(!confirm('確定移除此紀錄？建議先匯出備份。'))return;if(m.key==='calendar'){removeCalendarEntry(id);}else{data[m.key]=data[m.key].filter(r=>r.id!==id);}changed();render();}
 
 /* ---------- 總覽 ---------- */
 function dashboard(){const t=today(),att=data.attendance.filter(r=>r.date===t),pending=[...data.tasks,...data.admin,...data.duties].filter(x=>!x.done);
@@ -395,6 +401,24 @@ function openJournal(id,sid,batch){editorMode='journal';loadLibrary();editId=id|
 function updateTaskCount(){if(taskRows){const cards=[...taskRows.querySelectorAll('.english-task')];cards.forEach((r,i)=>{r.querySelector('.task-number').textContent=i+1;r.querySelector('[data-task-move=up]').disabled=i===0;r.querySelector('[data-task-move=down]').disabled=i===cards.length-1;});}const el=$('taskCount');if(!el||!$('taskRows'))return;const rows=[...$('taskRows').querySelectorAll('[data-row]')],d=rows.filter(r=>r.querySelector('input[type=checkbox]').checked).length;el.textContent=rows.length?'已完成 '+d+' / '+rows.length:'尚無項目';el.classList.toggle('all',rows.length>0&&d===rows.length);}
 function updateStuCount(){const el=$('stuCount');if(!el)return;el.textContent='已選 '+$('editForm').querySelectorAll('input[name=jstudents]:checked').length+' 位';}
 function applyAtt(sid,date,att,cls,reason,time){const r=setAttendance(sid,date,att,cls);if(!r)return;if(att==='準時'){r.note='';r.time='';return;}r.note=needWhy(r)?reason||'':'';r.time=['遲到','早退'].includes(att)?(time||''):'';}
+/* ---------- 學生長假 ---------- */
+function leaveBlocks(){const groups=new Map();data.attendance.filter(r=>r.vac).forEach(r=>{const k=r.studentId+'|'+r.note;const g=groups.get(k)||{sid:r.studentId,reason:r.note||'',dates:[]};g.dates.push(r.date);groups.set(k,g);});
+ const blocks=[];groups.forEach(g=>{g.dates.sort();let from=g.dates[0],prev=g.dates[0];for(let i=1;i<g.dates.length;i++){const d=g.dates[i];if((Date.parse(d)-Date.parse(prev))/864e5>4){blocks.push({sid:g.sid,reason:g.reason,from,to:prev});from=d;}prev=d;}blocks.push({sid:g.sid,reason:g.reason,from,to:prev});});
+ return blocks.sort((a,b)=>b.from.localeCompare(a.from));}
+function studentLeaveDlg(){let dlg=$('leaveDlg');if(!dlg){dlg=document.createElement('dialog');dlg.id='leaveDlg';document.body.append(dlg);}
+ const sts=data.students.filter(s=>!s.archived).sort((a,b)=>classOrder(a.classId)-classOrder(b.classId)||byNum(a,b)),blocks=leaveBlocks();
+ dlg.innerHTML='<h2>學生長假／請假</h2><p class="help">選擇學生與日期區間，該生的上課日會自動標記「長假」並寫入出席；標記的日子不需寫週誌。</p>'+
+ '<div class="formgrid"><label>學生<select id="lvStudent">'+sts.map(s=>'<option value="'+esc(s.id)+'">'+esc(s.name)+'（'+esc(className(s.classId)||'未分班')+'）</option>').join('')+'</select></label>'+
+ '<label>開始日期<input id="lvFrom" type="date" value="'+today()+'"></label><label>結束日期<input id="lvTo" type="date" value="'+addDays(today(),6)+'"></label>'+
+ '<label>原因<input id="lvReason" maxlength="100" placeholder="例：出國、返鄉、生病休養"></label></div>'+
+ '<div class="actions"><button class="primary" data-action="leaveApply">標記長假</button><button data-action="leaveClose">關閉</button></div>'+
+ (blocks.length?'<h3 style="margin-top:16px">已排定的長假</h3>'+blocks.map((b,i)=>'<div class="rowedit" style="align-items:center"><span>'+esc(sLabel(student(b.sid)))+'</span><b>'+esc(b.from.slice(5))+(b.to!==b.from?' ～ '+esc(b.to.slice(5)):'')+'</b><small class="help">'+esc(b.reason)+'</small><button type="button" class="rowdel" data-leavedel="'+i+'">✕</button></div>').join(''):'');
+ if(!dlg.open)dlg.showModal();}
+function applyStudentLeave(){const s=student($('lvStudent').value),from=$('lvFrom').value,to=$('lvTo').value,reason=$('lvReason').value.trim();
+ if(!s){toast('請選擇學生。');return;}if(!from||!to||to<from){toast('結束日期不可早於開始日期。');return;}if(!reason){toast('請填寫長假原因。');$('lvReason').focus();return;}
+ let set=0,skip=0;for(let d=from;d<=to;d=addDays(d,1)){if(!allowedOn(s,d,'')){skip++;continue;}const r=setAttendance(s.id,d,'長假','');if(r){r.note=reason;r.time='';r.vac=true;set++;}}
+ if(!set){toast('這段期間沒有上課日，未寫入紀錄。');return;}changed();render();studentLeaveDlg();toast(s.name+' 長假 '+set+' 天已連動出席'+(skip?'，'+skip+' 天非上課日略過':''));}
+function removeLeaveBlock(i){const b=leaveBlocks()[i];if(!b)return;if(!confirm('移除這段長假的出席紀錄？'))return;data.attendance=data.attendance.filter(r=>!(r.vac&&r.studentId===b.sid&&r.note===b.reason&&r.date>=b.from&&r.date<=b.to));changed();render();studentLeaveDlg();}
 function submitJournal(){const f=$('editForm'),date=f.elements.namedItem('date').value.trim();const start=f.elements.namedItem('startTime')?.value,end=f.elements.namedItem('endTime')?.value;if(start&&end&&end<start){toast('結束時間不可早於開始時間。');return;}for(const row of f.querySelectorAll('.english-task')){const item=readJournalCard(row);if(item.start&&item.end&&item.end<item.start){toast('進度項目的結束時間不可早於開始時間。');return;}if(item.option==='自訂'&&!item.detail){toast('請填寫自訂進度。');row.querySelector('.task-detail').focus();return;}}for(const row of f.querySelectorAll('.reading-task')){const item=readReadingTask(row);if(item.option==='KIST'&&!item.kistId&&!item.detail){toast('請從 KIST 課程清單選擇課次。');row.querySelector('.task-kist').focus();return;}}let gr=null;if(!batchJournal){gr=collectJournalGrades();if(gr===false)return;}
  const progChecks=[...f.querySelectorAll('input[data-jprog]')].map(x=>({rec:x.dataset.jprog,tid:x.dataset.tid,done:x.checked})),picked=batchJournal?[...f.querySelectorAll('input[name=jstudents]:checked')].map(x=>x.value):[journalStudent||data.journals.find(x=>x.id===editId)?.studentId];
  if(f.elements.namedItem('unifiedSyncProgress')?.checked&&!f.elements.namedItem('unifiedProgressUnit').value.trim()){toast('請填寫共同單元／進度名稱。');f.elements.namedItem('unifiedProgressUnit').focus();return;}
@@ -510,7 +534,7 @@ function applyJournalGrades(res,sid,date,cls){res.del.forEach(id=>{data.grades=d
 function linkProgress(sid,date){const jj=data.journals.find(x=>x.studentId===sid&&recordClass(x)===journalClassId&&x.date===date);if(!jj)return 0;const done=new Set(jj.tasks.filter(t=>t.done).map(t=>normTitle(t.text)));let n=0;
  pCurrent(sid).cur.forEach(rec=>{let ch=false;(rec.tasks||[]).forEach(t=>{if(!t.done&&done.has(normTitle(t.text))){t.done=true;t.doneAt=date;ch=true;n++;}});if(ch){rec.done=rec.tasks.every(t=>t.done);if(String(date)>String(rec.date||''))rec.date=date;}});return n;}
 function cardLinks(sid,date){const pc=pCurrent(sid).cur,gd=data.grades.filter(g=>g.studentId===sid&&g.date===date);if(!pc.length&&!gd.length)return '';
- return '<div class="jlinks">'+pc.map(r=>{const t=r.tasks||[];return '<span class="jl" title="學生進度"><span class="kdot k-'+(SUBJ_CLS[r.subject]||'other')+'"></span>'+esc((r.subject||'')+' '+(r.unit||''))+' <b>'+(t.length?t.filter(x=>x.done).length+'/'+t.length:(r.done?'✓':''))+'</b></span>';}).join('')+gd.map(g=>'<span class="jl st '+gStatus(g)[0]+'" title="今日成績">'+esc(gTitle(g))+' '+esc(gCellVal(g))+'</span>').join('')+'</div>';}
+ return '<div class="jlinks">'+pc.map(r=>{const t=r.tasks||[];return '<span class="jl" title="學生進度"><span class="kdot k-'+(SUBJ_CLS[r.subject]||'other')+'"></span>'+esc((r.subject||'')+' '+(r.unit||''))+' <b>'+(t.length?t.filter(x=>x.done).length+'/'+t.length:(r.done?'✓':''))+'</b></span>';}).join('')+gd.map(g=>{let v=gCellVal(g);if(g.exempt&&g.section==='單字檢定'){const lv=vocabLevelOf(sid);v=(lv.next||lv.passed)?'目前 '+(lv.next||lv.passed):'免';}return '<span class="jl st '+gStatus(g)[0]+'" title="今日成績'+(g.exempt?'（免考）':'')+'">'+esc(gTitle(g))+' '+esc(v)+'</span>';}).join('')+'</div>';}
 function obsHistHtml(sid,curId){if(!sid)return '';const items=data.weeklyObs.filter(x=>x.studentId===sid&&obsSubjectOf(x)===obsContextSubject()&&x.id!==curId&&(x.note||x.next)).sort((a,b)=>String(b.week).localeCompare(String(a.week)));
  if(!items.length)return '<p class="help" style="margin-top:10px">這位學生還沒有其他週的觀察紀錄。</p>';
  return '<div class="obshist"><div class="obshist-head"><h4>其他週的觀察與後續 <span class="jcount">'+items.length+' 週</span></h4><button type="button" class="iconbtn" data-obs="'+esc(sid)+'">查看全部／複製</button></div>'+items.slice(0,6).map(x=>'<div class="obsitem"><div class="obsdate">'+esc(weekLabel(x.week))+' · '+esc(className(x.classId||student(x.studentId)?.classId))+'</div>'+(x.note?'<p><b>觀察</b>'+esc(x.note)+'</p>':'')+(x.next?'<p><b>後續</b>'+esc(x.next)+'</p>':'')+'<div class="obsuse">'+(x.note?'<button type="button" class="linkbtn" data-obsuse="note|'+esc(x.id)+'">帶入觀察</button>':'')+(x.next?'<button type="button" class="linkbtn" data-obsuse="next|'+esc(x.id)+'">帶入後續</button>':'')+'</div></div>').join('')+(items.length>6?'<button type="button" class="addrow" data-obs="'+esc(sid)+'">查看全部 '+items.length+' 週</button>':'')+'</div>';}
@@ -571,7 +595,7 @@ function weekObsPage(){if(!data.classes.length){$('content').innerHTML=head('每
  (sts.length?'<div class="wocards">'+sts.map(card).join('')+'</div>':'<div class="panel empty">這個班級還沒有學生。</div>');}
 function weekObsCsv(){const ws=woWeek;csv('每週觀察-'+className(woClass)+'-'+ws,['學生編號','學生','週次','行為／學習觀察','後續協助'],classStudents(woClass).map(s=>{const w=getWeekObs(s.id,ws)||{};return [s.number,s.name,weekLabel(ws),w.note||'',w.next||''];}));}
 
-function holBanner(date,cid){const h=calFor(date,cid);if(!h)return '';return h.open?'<div class="holban open">📅 補課日｜'+esc(h.title)+(h.note?'　'+esc(h.note):'')+'</div>':'<div class="holban">🎌 '+(h.kind==='停課'?'停課':'國定假日')+'｜'+esc(h.title)+'　今天不上課'+(h.classId?'（'+esc(className(h.classId))+'）':'')+'。<button class="linkbtn" data-nav="行事曆">管理行事曆 ›</button></div>';}
+function holBanner(date,cid){const h=calFor(date,cid);if(!h)return '';return h.open?'<div class="holban open">📅 補課日｜'+esc(h.title)+(h.note?'　'+esc(h.note):'')+' <button class="linkbtn" data-holdel="'+esc(h.id)+'">移除補課日</button></div>':'<div class="holban">🎌 '+esc(h.kind||'放假')+'｜'+esc(h.title)+'　今天不上課'+(h.classId?'（'+esc(className(h.classId))+'）':'')+'。<button class="linkbtn" data-nav="行事曆">管理行事曆 ›</button><button class="linkbtn" data-holdel="'+esc(h.id)+'">移除放假</button></div>';}
 /* ---------- 週誌一週檢視 ---------- */
 const md2=d=>d?(+String(d).slice(5,7))+'/'+(+String(d).slice(8,10)):'';
 function journalWeek(act){if(!data.classes.some(c=>c.id===jClass))jClass=data.classes[0].id;const c=classById(jClass),ws=weekStartOf(jDate),wd=parseWeekdays(c?.weekdays),days=Array.from({length:7},(_,i)=>addDays(ws,i)).filter(d=>wd.length?wd.includes(weekday(d)):weekday(d)>=1&&weekday(d)<=5),sts=classStudents(jClass);
@@ -608,9 +632,9 @@ function attendanceCsv(){const days=monthDays(aMonth),map=new Map(data.attendanc
 function quickMark(sid,d){setAttendance(sid,d,'準時');changed();render();const b=document.querySelector('[data-att-s="'+CSS.escape(sid)+'"][data-att-d="'+d+'"]');if(b)b.focus();}
 function openAttMenu(b){attMenuFor(b.dataset.attS,b.dataset.attD);}
 // 出席原因
-const ATT_REASONS={遲到:['學校留下','寫作業','塞車／交通','家裡有事'],早退:['看醫生','身體不適','才藝課','家裡有事'],病假:['感冒','發燒','看醫生','身體不適'],事假:['家裡有事','才藝課','出遊','家族活動'],公假:['學校活動','比賽','校外教學'],缺席:['未告知','聯絡不上','家裡有事']};
-const needWhy=r=>!!r&&['事假','公假'].includes(r.status);
-const ABSENT_ATT=['缺席','病假','事假','公假','請假'];
+const ATT_REASONS={遲到:['學校留下','寫作業','塞車／交通','家裡有事'],早退:['看醫生','身體不適','才藝課','家裡有事'],病假:['感冒','發燒','看醫生','身體不適'],事假:['家裡有事','才藝課','出遊','家族活動'],公假:['學校活動','比賽','校外教學'],缺席:['未告知','聯絡不上','家裡有事'],長假:['出國','家族旅遊','返鄉','生病休養']};
+const needWhy=r=>!!r&&['事假','公假','長假'].includes(r.status);
+const ABSENT_ATT=['缺席','病假','事假','公假','請假','長假'];
 const isAbsentAtt=a=>!!a&&ABSENT_ATT.includes(a.status);
 function updateAttendanceReasonUI(value,popup=false){const reason=needWhy({status:value}),time=['遲到','早退'].includes(value),box=popup?$('attWhyBox'):$('attReason');if(!box)return;box.hidden=!reason&&!time;const input=popup?$('attNote'):$('editForm').elements.namedItem('attNote');if(input){input.closest('label').hidden=!reason;input.disabled=!reason;input.required=reason;if(!reason)input.value='';}const chips=popup?$('attChips'):$('jAttChips');if(chips)chips.hidden=!reason;const timeBox=popup?$('attTimeBox'):box.querySelector('.attreason-time');if(timeBox)timeBox.hidden=!time;}
 const attWhy=r=>[needWhy(r)?r.note:'',r.time&&(r.status==='早退'?'離開 ':'到班 ')+r.time].filter(Boolean).join('　');
@@ -717,7 +741,7 @@ const gCellVal=g=>!g?'':g.exempt?'免':g.absent?'缺':g.passed?'PASS':(g.score??
 function gParse(v){v=String(v).trim();if(!v)return null;if(/^(PASS|通過)$/i.test(v))return {passed:true,absent:false,exempt:false,score:''};if(/^(缺|缺考)$/.test(v))return {passed:false,absent:true,exempt:false,score:''};if(/^(免|不用考|-|—)$/.test(v))return {passed:false,exempt:true,absent:false,score:''};const n=Number(v);if(!isFinite(n)||n<0||n>1000)return undefined;return {score:String(n),passed:false,absent:false,exempt:false};}
 function gCell(ck,g,attrs,ri,col,label,att){const st=g?gStatus(g):['none','未登記'],mk={good:'✓',mid:'△',low:'✕'}[st[0]]||'',lv=!g&&att&&isLeaveAtt(att);
  return '<td class="gc"><span class="gcw"><input class="gcell s-'+st[0]+(lv?' s-attleave':'')+'"'+(lv?' placeholder="'+esc(att.status)+'"':'')+(g&&att&&isLeaveAtt(att)?' data-att="'+esc(att.status)+'"':'')+' data-grade-id="'+esc(g?.id||'')+'" data-ck="'+esc(ck)+'" data-ri="'+ri+'" data-col="'+esc(col)+'" '+attrs+' value="'+esc(gCellVal(g))+'" inputmode="decimal" autocomplete="off" aria-label="'+esc(label+'：'+st[1])+'" title="'+esc(label+(g&&g.date&&!String(label).includes(g.date)?'　'+g.date:'')+'　'+st[1]+'　長按可編輯完整資料（電腦亦可按 F2）'+(g&&g.note?'：'+g.note:'')+(g&&g._n>1?'（共 '+g._n+' 次）':'')+(att&&att.status!=='準時'?'　出席：'+att.status+(attWhy(att)?'（'+attWhy(att)+'）':''):''))+'"><span class="cm" aria-hidden="true">'+(lv?'':mk)+'</span>'+(att&&isLeaveAtt(att)?'<span class="gatt k-'+(ATT_CODE[att.status]||['none'])[0]+'" aria-hidden="true">'+esc(String(att.status).slice(0,1))+'</span>':'')+'</span></td>';}
-const isLeaveAtt=a=>a&&['病假','事假','公假','請假','缺席'].includes(a.status);
+const isLeaveAtt=a=>a&&['病假','事假','公假','請假','缺席','長假'].includes(a.status);
 const attOn=(sid,date)=>data.attendance.find(a=>a.studentId===sid&&a.date===date);
 function attChip(a){return a&&needWhy(a)?'<span class="attst k-'+(ATT_CODE[a.status]||['none'])[0]+'" title="'+esc(a.status+(attWhy(a)?'：'+attWhy(a):''))+'">'+esc(a.status)+(a.note?'・'+esc(a.note):'')+'</span>':'';}
 function gLatest(list){if(!list.length)return null;const l=[...list].sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0];l._n=list.length;return l;}
@@ -737,8 +761,18 @@ function gCellChange(t){const d=t.dataset,sec=d.gsec,sid=d.sid,cls=gClass,subj=g
 function gSecRecs(sec,cls){return data.grades.filter(g=>g.section===sec&&gClassOf(g)===cls);}
 function dailyData(cls){const recs=gSecRecs('每週單字',cls).filter(g=>!gMonth||String(g.date).startsWith(gMonth)),dates=[...new Set([...recs.map(g=>g.date),...gExtraDates.filter(d=>!gMonth||d.startsWith(gMonth))])].filter(Boolean).sort();
  const sts=(typeof gradeSelectedStudents==='function'?gradeSelectedStudents(cls):classStudents(cls)),cell=(sid,d)=>gLatest(recs.filter(g=>g.studentId===sid&&g.date===d));return {recs,dates,sts,cell};}
-function unitData(cls){const recs=gSecRecs('檢測',cls),units=[...new Set([...recs.map(g=>g.title),...gExtraUnits])].filter(Boolean).sort((a,b)=>a.localeCompare(b,'zh-Hant',{numeric:true}));
+function sortUnits(units,cls){const ord=(data.meta.unitOrder&&data.meta.unitOrder[cls])||[],pos=new Map(ord.map((u,i)=>[u,i]));
+ return [...units].sort((a,b)=>{const pa=pos.has(a)?pos.get(a):1e9,pb=pos.has(b)?pos.get(b):1e9;return pa!==pb?pa-pb:a.localeCompare(b,'zh-Hant',{numeric:true});});}
+function unitList(cls){const recs=gSecRecs('檢測',cls);return sortUnits([...new Set([...recs.map(g=>g.title),...gExtraUnits])].filter(Boolean),cls);}
+function moveUnit(cls,unit,dir){const ord=unitList(cls),i=ord.indexOf(unit),j=i+dir;if(i<0||j<0||j>=ord.length)return;[ord[i],ord[j]]=[ord[j],ord[i]];
+ if(!data.meta.unitOrder)data.meta.unitOrder={};data.meta.unitOrder[cls]=ord;changed();render();}
+function renameUnit(cls,old){const next=prompt('修改單元名稱',old);if(next==null)return;const name=next.trim();if(!name||name===old)return;
+ const hits=data.grades.filter(g=>g.section==='檢測'&&gClassOf(g)===cls&&g.title===old);hits.forEach(g=>g.title=name);
+ gExtraUnits=gExtraUnits.map(u=>u===old?name:u);const ord=data.meta.unitOrder&&data.meta.unitOrder[cls];if(ord)ord.forEach((u,i)=>{if(u===old)ord[i]=name;});
+ changed();render();toast('已將「'+old+'」改為「'+name+'」'+(hits.length?'（'+hits.length+' 筆成績）':'')+'。');}
+function unitData(cls){const recs=gSecRecs('檢測',cls),units=unitList(cls);
  const sts=(typeof gradeSelectedStudents==='function'?gradeSelectedStudents(cls):classStudents(cls)),cell=(sid,u,p)=>gLatest(recs.filter(g=>g.studentId===sid&&g.title===u&&(g.paper||'')===p));return {recs,units,sts,cell};}
+function vocabLevelOf(sid){const recs=data.grades.filter(g=>g.section==='單字檢定'&&g.studentId===sid);let hi=-1;VOCAB_LEVELS.forEach((l,i)=>{if(recs.some(g=>g.title===l&&gStatus(g)[0]==='good'))hi=i;});return {passed:hi>=0?VOCAB_LEVELS[hi]:'',next:hi+1<VOCAB_LEVELS.length?VOCAB_LEVELS[hi+1]:''};}
 function vocabData(cls){const recs=gSecRecs('單字檢定',cls),others=[...new Set(recs.map(g=>g.title))].filter(t=>!VOCAB_LEVELS.includes(t)).sort(),cols=[...VOCAB_LEVELS,...others];
  const sts=(typeof gradeSelectedStudents==='function'?gradeSelectedStudents(cls):classStudents(cls)),cell=(sid,l)=>gLatest(recs.filter(g=>g.studentId===sid&&normTitle(g.title)===normTitle(l)));
  const level=sid=>{let hi=-1;VOCAB_LEVELS.forEach((l,i)=>{if(recs.some(g=>g.studentId===sid&&g.title===l&&gStatus(g)[0]==='good'))hi=i;});return {passed:hi>=0?VOCAB_LEVELS[hi]:'',next:hi+1<VOCAB_LEVELS.length?VOCAB_LEVELS[hi+1]:''};};
@@ -758,7 +792,7 @@ function dailyView(cls){const {dates,sts,cell}=dailyData(cls);
 function unitView(cls){const {units,sts,cell}=unitData(cls);
  if(!sts.length)return '<div class="panel empty">這個班級還沒有學生。</div>';
  return '<section class="panel"><div class="filters"><label>登記日期（新輸入的成績）<input id="gEntryDate" type="date" value="'+esc(gEntryDate)+'"></label><label>新增單元<input id="gNewUnit" maxlength="60" placeholder="例如 L10、5-4"></label><button data-action="gAddUnit">＋ 新增單元</button></div>'+
- (units.length?'<div class="tablewrap"><table class="gmatrix"><thead><tr><th rowspan="2">學生</th>'+units.map(u=>'<th colspan="2" class="gu">'+esc(u)+'</th>').join('')+'<th rowspan="2">A 平均</th><th rowspan="2">B 平均</th></tr><tr>'+units.map(()=>'<th class="gp">A</th><th class="gp b">B</th>').join('')+'</tr></thead><tbody>'+
+ (units.length?'<div class="tablewrap"><table class="gmatrix"><thead><tr><th rowspan="2">學生</th>'+units.map(u=>'<th colspan="2" class="gu"><span class="guhd"><button type="button" class="umv" data-unitmove="-1|'+esc(u)+'" aria-label="左移 '+esc(u)+'" title="左移">‹</button><button type="button" class="umv uname" data-unitrename="'+esc(u)+'" title="修改單元名稱">'+esc(u)+' ✎</button><button type="button" class="umv" data-unitmove="1|'+esc(u)+'" aria-label="右移 '+esc(u)+'" title="右移">›</button></span></th>').join('')+'<th rowspan="2">A 平均</th><th rowspan="2">B 平均</th></tr><tr>'+units.map(()=>'<th class="gp">A</th><th class="gp b">B</th>').join('')+'</tr></thead><tbody>'+
   sts.map((s,ri)=>{const A=units.map(u=>cell(s.id,u,'A')),B=units.map(u=>cell(s.id,u,'B'));
    return '<tr><th scope="row">'+esc(sLabel(s))+'</th>'+units.map((u,i)=>gCell('u|'+s.id+'|'+u+'|A',A[i],'data-gsec="檢測" data-sid="'+esc(s.id)+'" data-title="'+esc(u)+'" data-paper="A"',ri,u+'|A',s.name+' '+u+' A 卷')+gCell('u|'+s.id+'|'+u+'|B',B[i],'data-gsec="檢測" data-sid="'+esc(s.id)+'" data-title="'+esc(u)+'" data-paper="B"',ri,u+'|B',s.name+' '+u+' B 卷')).join('')+'<td class="gsum">'+(gAvg(A)??'—')+'</td><td class="gsum">'+(gAvg(B)??'—')+'</td></tr>';}).join('')+
   '</tbody></table></div>':'<p class="muted">還沒有檢測單元。輸入單元名稱後按「新增單元」。</p>')+
@@ -949,7 +983,7 @@ function kistSearch(q){const all=kistList();q=String(q||'').trim();if(!q)return 
  if(m)return all.filter(k=>k.level===+m[1]&&(!m[2]||String(k.n).startsWith(m[2])));if(only)return all.filter(k=>k.n===+only[1]);const nt=normTitle(q);return all.filter(k=>normTitle(k.title+k.strategy).includes(nt));}
 function pickKist(row,id){const k=kistList().find(x=>x.id===id);if(!row||!k)return;const inp=row.querySelector('.booktitle'),sels=row.querySelectorAll('select');inp.value=k.title;row.dataset.bookid=k.id;sels[0].value='KIST';sels[1].value='';const box=row.querySelector('.booksug');box.hidden=true;box.innerHTML='';inp.setAttribute('aria-expanded','false');}
 function kistPanel(){const all=kistList(),lvls=[...new Set(all.map(k=>k.level))];
- return '<section class="panel"><h2>KIST 課程選單</h2><p class="help">學生週誌選擇「KIST」後，可直接從這份清單挑選課次（輸入「5-3」、「第3課」或課名可篩選）。</p>'+lvls.map(lv=>'<h3>Level '+lv+'</h3><div class="kistlist">'+all.filter(k=>k.level===lv).map(k=>'<div class="kistitem"><b>第 '+k.n+' 課</b> '+esc(k.name)+(k.strategy?'<small>✦ '+esc(k.strategy)+'</small>':'')+(k.custom?'<button class="linkbtn" data-kistdel="'+esc(lv+'-'+k.n)+'" aria-label="移除自訂課次 '+esc(k.title)+'">×</button>':'')+'</div>').join('')+'</div>').join('')+
+ return '<section class="panel"><h2>KIST 課程選單</h2><p class="help">學生週誌選擇「KIST」後，可直接從這份清單挑選課次（輸入「5-3」、「第3課」或課名可篩選）。點級別可展開課次。</p>'+lvls.map(lv=>{const ks=all.filter(k=>k.level===lv);return '<details class="kistlv"><summary>Level '+lv+' <span class="help">'+ks.length+' 課</span></summary><div class="kistlist">'+ks.map(k=>'<div class="kistitem"><b>'+k.n+'</b> '+esc(k.name)+(k.strategy?'<small>✦ '+esc(k.strategy)+'</small>':'')+(k.custom?'<button class="linkbtn" data-kistdel="'+esc(lv+'-'+k.n)+'" aria-label="移除自訂課次 '+esc(k.title)+'">×</button>':'')+'</div>').join('')+'</div></details>';}).join('')+
  '<label style="margin-top:14px">新增課次（每行一課，格式：級別-課次 課名｜閱讀策略）<textarea id="newKist" rows="3" style="min-height:70px" placeholder="6-3 課名｜閱讀策略\nLevel 6 第4課 課名"></textarea></label><div class="actions" style="margin-top:8px"><button data-action="addKist">加入課次</button></div><p class="help">與內建課次同級別同課次時，會以自訂內容為準。</p></section>';}
 
 function showBookSug(inp){const box=inp.nextElementSibling,row=inp.closest('[data-row]'),isKist=row&&row.querySelector('select').value==='KIST';
@@ -990,6 +1024,10 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
  if(d.nav){if(d.nav==='學生週誌')jClass=journalClassFor(jDate)||jClass;return navigate(d.nav);}
  if(d.pin){data.pins=data.pins.includes(d.pin)?data.pins.filter(p=>p!==d.pin):[...data.pins,d.pin];changed();nav();return;}
  if(d.edit)return openEditor(d.edit);if(d.delete)return removeRow(d.delete);
+ if(d.holdel){const r=data.calendar.find(x=>x.id===d.holdel);if(r&&confirm('移除「'+r.title+'」（'+r.date+(r.end?' ～ '+r.end:'')+'）？')){removeCalendarEntry(d.holdel);changed();render();}return;}
+ if(d.leavedel!=null)return removeLeaveBlock(+d.leavedel);
+ if(d.unitrename){renameUnit(gClass,d.unitrename);return;}
+ if(d.unitmove){const i=d.unitmove.indexOf('|'),dir=+d.unitmove.slice(0,i),u=d.unitmove.slice(i+1);moveUnit(gClass,u,dir);return;}
  if(d.jnew)return openJournal(null,d.jnew,false);if(d.jedit)return openJournal(d.jedit);
  if(d.jdel){if(confirm('確定移除這筆週誌？（出席紀錄會保留）')){data.journals=data.journals.filter(j=>j.id!==d.jdel);changed();render();}return;}
  if(d.unitdel!=null){data.mathUnits.splice(+d.unitdel,1);changed();render();return;}
@@ -1017,6 +1055,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
   case'clearFilters':search='';filterDate='';filterClass='';if(page==='學生週誌')jMonth='';render();break;
   case'presetClasses':presetClasses();break;case'autoMonitors':autoMonitors();break;case'copyCleaning':copyCleaning();break;case'summerPrint':printSummerDay();break;
   case'attGrid':attView='grid';render();break;case'attList':attView='list';render();break;case'attClose':$('attMenu').close();break;
+ case'studentLeave':studentLeaveDlg();break;case'leaveApply':applyStudentLeave();break;case'leaveClose':$('leaveDlg').close();break;
   case'aPrev':aMonth=shiftMonth(aMonth,-1);render();break;case'aNext':aMonth=shiftMonth(aMonth,1);render();break;case'aThis':aMonth=today().slice(0,7);render();break;
   case'jView':jView=jView==='day'?'list':'day';search='';render();break;
   case'jwPrev':jDate=addDays(weekStartOf(jDate),-7);render();break;case'jwNext':jDate=addDays(weekStartOf(jDate),7);render();break;case'jwThis':jDate=today();render();break;case'jBatch':openJournal(null,null,true);break;

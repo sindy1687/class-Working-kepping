@@ -202,7 +202,9 @@ footer{flex-direction:column}
 
 /* KIST 選單 */
 .sughead{position:sticky;top:0;background:#f5f7f1;color:#5d6b60;font-size:11px;font-weight:700;letter-spacing:1px;padding:5px 12px;border-bottom:1px solid var(--line)}
-.kistlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:6px 16px;margin-bottom:6px}.kistitem{padding:6px 0;border-bottom:1px solid #f0f2ec}.kistitem small{display:block;color:var(--muted);font-size:12px}.kistitem .linkbtn{border:0;background:none;color:#a44e4e;padding:0 4px}
+.kistlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px 14px;margin:8px 0 12px}.kistitem{padding:4px 0;border-bottom:1px solid #f0f2ec;font-size:13px}.kistitem b{color:var(--muted);font-weight:600;margin-right:2px}.kistitem small{display:block;color:var(--muted);font-size:11px}.kistitem .linkbtn{border:0;background:none;color:#a44e4e;padding:0 4px}.kistlv{margin-bottom:6px}.kistlv>summary{cursor:pointer;font-weight:700;padding:6px 8px;border-radius:8px;list-style:none;display:flex;align-items:center;gap:8px;user-select:none}.kistlv>summary::-webkit-details-marker{display:none}.kistlv>summary::before{content:'▸';color:var(--muted);font-size:11px;transition:transform .15s}.kistlv[open]>summary::before{transform:rotate(90deg)}.kistlv>summary:hover{background:#f6f1e6}
+/* 檢測單元欄標頭控制 */
+.guhd{display:flex;align-items:center;justify-content:center;gap:2px}.umv{border:0;background:none;color:var(--muted);cursor:pointer;font-size:12px;padding:1px 4px;border-radius:6px;line-height:1.4}.umv:hover{background:#efe5d0;color:#6d4519}.umv.uname{font-size:14px;font-weight:700;color:inherit;letter-spacing:.5px}
 
 /* 班級卡片 */
 .kchips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}.kchips button{border-radius:20px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px}.kchips button small{color:var(--muted)}.kchips button[aria-pressed=true]{background:#eaf2e5;border-color:#a9c39d;font-weight:600}
@@ -1068,3 +1070,6 @@ body.summer-mode .primary:hover{background:linear-gradient(135deg,#33ad9d,#25897
 #editor:has(.md-insert){max-width:980px}
 #editor .wide textarea{min-height:160px}
 #editor:has(textarea[name="content"]) textarea[name="content"]{min-height:min(42vh,420px)}
+
+/* ��r�˩w�G�ŧO�檺��r�d�� */
+.gmatrix.vocab .vr{display:block;font-size:9px;font-weight:600;color:var(--muted);letter-spacing:0;line-height:1.1;margin-top:1px}
