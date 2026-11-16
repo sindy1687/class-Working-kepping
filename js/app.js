@@ -92,6 +92,9 @@ function changed(){persist();}
 function status(t,err=false){$('status').textContent=t;$('status').className='status'+(err?' error':'');}
 function showBanner(html){$('alert').innerHTML='<div class="banner">'+html+'</div>';}
 function toast(t){const el=document.createElement('div');el.className='toast';el.setAttribute('role','status');el.textContent=t;$('toasts').append(el);setTimeout(()=>el.remove(),3500);}
+function copyText(t){const ok=()=>toast('已複製，可直接貼到 Excel。');
+ const fb=()=>{const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0;pointer-events:none';document.body.append(ta);ta.select();try{const r=document.execCommand('copy');if(r)ok();else toast('複製失敗，請手動選取。');}catch{toast('複製失敗，請手動選取。');}finally{ta.remove();}};
+ if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(t).then(ok,fb);else fb();}
 function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 function csv(name,headers,rows){const q=v=>{v=String(v??'');if(/^[=+\-@]/.test(v))v="'"+v;return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};download(name+'-'+today()+'.csv','﻿'+[headers,...rows].map(r=>r.map(q).join(',')).join('\r\n'),'text/csv;charset=utf-8');}
 function exportData(){data.meta.lastExport=today();persist();download('Sindy-工作台-'+today()+'.json',JSON.stringify(data,null,2),'application/json');}
@@ -315,7 +318,7 @@ function journalClassFor(date){const t=date||jDate||today(),ids=data.classes.map
 function journalPage(){
  if(!data.classes.length){$('content').innerHTML=head('學生週誌',modules['學生週誌'].desc)+noClasses();return;}
  if(!data.classes.some(c=>c.id===jClass))jClass=journalClassFor(jDate)||data.classes[0].id;
- const act='<div class="seg" role="group" aria-label="檢視方式">'+[['day','每日'],['week','一週'],['list','清單／搜尋']].map(([k,l])=>'<button data-jv="'+k+'" aria-pressed="'+(jView===k)+'">'+l+'</button>').join('')+'</div><button data-action="csv">↓ 匯出 CSV</button>'+(jView==='day'?'<button class="primary" data-action="jBatch">＋ 建立全班週誌</button>':'');
+ const act='<div class="seg" role="group" aria-label="檢視方式">'+[['day','每日'],['week','一週'],['list','清單／搜尋']].map(([k,l])=>'<button data-jv="'+k+'" aria-pressed="'+(jView===k)+'">'+l+'</button>').join('')+'</div><button data-action="jCopyAll">⧉ 複製全班進度</button><button data-action="csv">↓ 匯出 CSV</button>'+(jView==='day'?'<button class="primary" data-action="jBatch">＋ 建立全班週誌</button>':'');
  if(jView==='list')return journalList(act);if(jView==='week')return journalWeek(act);
  const all=classStudents(jClass),dj=dayJournals(),shown=jRule?all.filter(s=>allowedOn(s,jDate,jClass)||dj.some(j=>j.studentId===s.id)):all;
  const counts=new Map();dj.forEach(j=>new Set(j.tasks.map(t=>t.text.trim()).filter(Boolean)).forEach(x=>counts.set(x,(counts.get(x)||0)+1)));
@@ -328,7 +331,7 @@ function journalPage(){
   (j?((j.subject||j.content)?'<p>'+esc([j.subject,j.content].filter(Boolean).join('：'))+'</p>':'')+
    (j.tasks.length?'<div class="tasklist">'+sortTasks(j.tasks).map(t=>'<label class="checklabel"><input type="checkbox" data-jtask="'+esc(j.id)+'" data-task="'+esc(t.id)+'" '+(t.done?'checked':'')+'>'+(tTime(t)?'<span class="ttime">'+esc(tTime(t))+'</span>':'')+esc(formatAssessmentPaper(t.text))+(t.needsHelp?' ⭐ 老師需要協助':'')+'</label>').join('')+'</div>':'')+
    (j.readings.length?'<div>'+j.readings.map(chip).join('')+'</div>':'')+woLine(j.studentId,j.date)+
-   '<div class="actions"><button data-jedit="'+esc(j.id)+'">編輯週誌</button><button data-obs="'+esc(j.studentId)+'">觀察紀錄</button><button class="danger" data-jdel="'+esc(j.id)+'">移除</button></div>'
+   '<div class="actions"><button data-jedit="'+esc(j.id)+'">編輯週誌</button><button data-jcopy="'+esc(j.id)+'" title="複製任務與完成狀態，可貼到 Excel">複製進度</button><button data-obs="'+esc(j.studentId)+'">觀察紀錄</button><button class="danger" data-jdel="'+esc(j.id)+'">移除</button></div>'
   :'<p class="help">'+(abs?esc(a.status)+'，今日未到，不需寫週誌。':holidayOff(jDate,jClass,s)?esc(holTag(holidayOff(jDate,jClass,s)))+'，不上課。':off?'今天不是這個年級的排課日。':'尚未建立今日週誌。')+'</p>'+(abs?'':'<div class="actions"><button data-jnew="'+esc(s.id)+'">＋ 建立週誌</button></div>'))+'</article>';};
  $('content').innerHTML=head('學生週誌',modules['學生週誌'].desc,act)+
  classStrip(jClass)+holBanner(jDate,jClass)+'<section class="panel"><div class="filters"><label>班級'+classSelect('jClass',jClass)+'</label><label>日期<input id="jDate" type="date" value="'+esc(jDate)+'"></label><div class="actions"><button data-action="jPrev" aria-label="前一個上課日">‹</button><button data-action="jToday">今天</button><button data-action="jNext" aria-label="下一個上課日">›</button></div><label class="checklabel"><input type="checkbox" id="jRule" '+(jRule?'checked':'')+'>只顯示排課年級</label></div>'+
@@ -638,6 +641,7 @@ const ABSENT_ATT=['缺席','病假','事假','公假','請假','長假'];
 const isAbsentAtt=a=>!!a&&ABSENT_ATT.includes(a.status);
 function updateAttendanceReasonUI(value,popup=false){const reason=needWhy({status:value}),time=['遲到','早退'].includes(value),box=popup?$('attWhyBox'):$('attReason');if(!box)return;box.hidden=!reason&&!time;const input=popup?$('attNote'):$('editForm').elements.namedItem('attNote');if(input){input.closest('label').hidden=!reason;input.disabled=!reason;input.required=reason;if(!reason)input.value='';}const chips=popup?$('attChips'):$('jAttChips');if(chips)chips.hidden=!reason;const timeBox=popup?$('attTimeBox'):box.querySelector('.attreason-time');if(timeBox)timeBox.hidden=!time;}
 const attWhy=r=>[needWhy(r)?r.note:'',r.time&&(r.status==='早退'?'離開 ':'到班 ')+r.time].filter(Boolean).join('　');
+const attLineText=a=>a?'出席：'+a.status+((a.time?' · '+a.time+(a.status==='早退'?' 離開':' 到班'):'')+(a.note?' · '+a.note:'')):'出席：未點名';
 function recentReasons(sid){const seen=[];data.attendance.filter(x=>x.studentId===sid&&needWhy(x)&&x.note).sort((a,b)=>String(b.date).localeCompare(String(a.date))).forEach(x=>{const n=x.note.trim();if(n&&!seen.includes(n)&&seen.length<4)seen.push(n);});return seen;}
 function reasonChips(status,sid){const list=[...new Set([...(ATT_REASONS[status]||[]),...recentReasons(sid)])];return list.map(x=>'<button type="button" class="rchip" data-reason="'+esc(x)+'">'+esc(x)+'</button>').join('');}
 let attPick='';
@@ -1029,6 +1033,10 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
  if(d.unitrename){renameUnit(gClass,d.unitrename);return;}
  if(d.unitmove){const i=d.unitmove.indexOf('|'),dir=+d.unitmove.slice(0,i),u=d.unitmove.slice(i+1);moveUnit(gClass,u,dir);return;}
  if(d.jnew)return openJournal(null,d.jnew,false);if(d.jedit)return openJournal(d.jedit);
+ if(d.jcopy){const j=data.journals.find(x=>x.id===d.jcopy);if(!j)return;const a=data.attendance.find(r=>r.studentId===j.studentId&&r.date===j.date),w=getWeekObs(j.studentId,weekStartOf(j.date))||{},roc=+j.date.slice(0,4)-1911;
+ copyText(['日期：'+roc+' /'+j.date.slice(5,7)+' /'+j.date.slice(8,10)+'（'+WEEK[weekday(j.date)]+'）',attLineText(a),'當天進度安排：',
+  ...sortTasks(j.tasks).map(t=>(t.done?'☑':'☐')+' '+(tTime(t)?tTime(t)+'　':'')+formatAssessmentPaper(t.text)),
+  '學習狀況：'+(w.note||''),'工作人員建議：'+(w.next||'')].join('\n'));return;}
  if(d.jdel){if(confirm('確定移除這筆週誌？（出席紀錄會保留）')){data.journals=data.journals.filter(j=>j.id!==d.jdel);changed();render();}return;}
  if(d.unitdel!=null){data.mathUnits.splice(+d.unitdel,1);changed();render();return;}
  if(d.goto){const q=gq;navigate(d.goto);search=q;if(d.goto==='學生週誌'){jView='list';jMonth='';}if(d.goto==='出席總覽')attView='list';render();return;}
@@ -1059,6 +1067,11 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
   case'aPrev':aMonth=shiftMonth(aMonth,-1);render();break;case'aNext':aMonth=shiftMonth(aMonth,1);render();break;case'aThis':aMonth=today().slice(0,7);render();break;
   case'jView':jView=jView==='day'?'list':'day';search='';render();break;
   case'jwPrev':jDate=addDays(weekStartOf(jDate),-7);render();break;case'jwNext':jDate=addDays(weekStartOf(jDate),7);render();break;case'jwThis':jDate=today();render();break;case'jBatch':openJournal(null,null,true);break;
+  case'jCopyAll':{const sts=classStudents(jClass),dj=dayJournals(),rows=[];sts.forEach(s=>{const j=dj.find(x=>x.studentId===s.id),a=data.attendance.find(r=>r.studentId===s.id&&r.date===jDate);
+   rows.push([sLabel(s),attLineText(a)].join('\t'));
+   if(j&&j.tasks.length)sortTasks(j.tasks).forEach(t=>rows.push([sLabel(s),(t.done?'☑':'☐')+' '+(tTime(t)?tTime(t)+'　':'')+formatAssessmentPaper(t.text)].join('\t')));
+   else if(!isAbsentAtt(a)&&!j)rows.push([sLabel(s),'未建立週誌'].join('\t'));});
+   if(!rows.length){toast('今天沒有可複製的週誌。');break;}copyText(rows.join('\n'));break;}
   case'jPrev':jDate=stepSchoolDay(jDate,-1);render();break;case'jNext':jDate=stepSchoolDay(jDate,1);render();break;case'jToday':jDate=today();render();break;
   case'addTask':{const lastEnd=[...$('taskRows').querySelectorAll('.tend')].map(x=>x.value).filter(Boolean).pop();$('taskRows').insertAdjacentHTML('beforeend',taskRow(lastEnd?{start:lastEnd}:{}));$('taskRows').lastElementChild.querySelector('input[type=text]').focus({preventScroll:true});b.scrollIntoView({block:'nearest'});updateTaskCount();break;}
   case'taskAll':$('taskRows').querySelectorAll('[data-row=task] > .tick input, .task-done').forEach(x=>x.checked=true);updateTaskCount();break;
