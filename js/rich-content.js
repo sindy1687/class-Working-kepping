@@ -42,6 +42,11 @@ function mdToHtml(src){
    if(/^(chart|圖表)$/i.test(fm[1])&&typeof renderChart==='function'){out+=renderChart(code.join('\n'),fm[2]);continue;}
    out+='<div class="md-code"><div class="md-code-h"><span>'+mdEsc(fm[1]||'程式碼')+'</span><button type="button" class="md-copy" data-md-copy>複製</button></div><pre><code>'+mdEsc(code.join('\n'))+'</code></pre></div>';continue;}
   if(!l.trim()){flush();i++;continue;}
+  if(/<table[\s>]/i.test(l)){flush();let blob=l;i++;while(i<lines.length&&!/<\/table>/i.test(blob)){blob+='\n'+lines[i];i++;}
+   const tm=blob.match(/<table[\s\S]*?<\/table>/i);
+   if(tm&&typeof sanitizeTableHtml==='function'){const before=blob.slice(0,tm.index).trim(),after=blob.slice(tm.index+tm[0].length).trim();
+    if(before)out+='<p>'+mdInline(before)+'</p>';out+=sanitizeTableHtml(tm[0]);if(after)out+='<p>'+mdInline(after)+'</p>';continue;}
+   para.push(l.trim());continue;}
   let m=l.match(/^\s*(#{1,6})\s+(.*?)\s*#*\s*$/);if(m){flush();const n=Math.min(6,m[1].length+1);out+='<h'+n+'>'+mdInline(m[2])+'</h'+n+'>';i++;continue;}
   if(/^\s*([-*_])(\s*\1){2,}\s*$/.test(l)){flush();out+='<hr>';i++;continue;}
   if(l.includes('|')&&i+1<lines.length&&/^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(lines[i+1])){flush();const head=mdTableRow(l);i+=2;const rows=[];while(i<lines.length&&lines[i].includes('|')&&lines[i].trim())rows.push(mdTableRow(lines[i++]));

@@ -5,7 +5,7 @@ function syncCleaningSchedule(cls,week,dates=Array.from({length:7},(_,i)=>addDay
  const students=classStudents(cls),jobs=cleaningJobs(cls),start=today();let updated=false;
  for(const date of dates){
  if(date<start)continue;
-  const eligible=students.filter(s=>allowedOn(s,date,cls)),ids=new Set(eligible.map(s=>s.id));
+  const eligible=students.filter(s=>allowedOn(s,date,cls)&&!isAbsentAtt(attOn(s.id,date))&&!cwAbsentIds(date).has(s.id)),ids=new Set(eligible.map(s=>s.id));
   const previous=data.cleaning.filter(r=>r.classId===cls&&r.date===date);
   const remove=new Set(previous.filter(r=>!r.done&&r.note==='自動輪替'&&(!ids.has(r.studentId)||!jobs.includes(r.area))).map(r=>r.id));
   if(remove.size){data.cleaning=data.cleaning.filter(r=>!remove.has(r.id));updated=true;}

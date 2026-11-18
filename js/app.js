@@ -1,5 +1,5 @@
 'use strict';
-const groups=[['工作總覽',['總覽']],['學生與班級',['班級與學生','班級資料','轉班紀錄']],['日常教學',['學生週誌','每週觀察','學生進度','出席總覽','閱讀統計','個人閱讀清單','課後教學筆記','教案']],['成績與評量',['成績登記','學校成績']],['特殊任務',['國小認證與特殊任務']],['暑期專區',['暑期出席與便當','暑期課表','暑期學生課表','暑期學生進度','暑期老師訂餐']],['班務與行政',['值日生','清潔工作','輪值排班','行政','活動']],['資源與附件',['常用網站','教材庫']],['課表與資料設定',['行事曆','老師與課表','資料匯入匯出']]];
+const groups=[['工作總覽',['總覽']],['學生與班級',['班級與學生','班級資料','轉班紀錄']],['日常教學',['學生週誌','每週觀察','學生進度','出席總覽','閱讀統計','個人閱讀清單','課後教學筆記','教案']],['成績與評量',['成績登記','學校成績']],['特殊任務',['國小認證與特殊任務']],['暑期專區',['暑期出席與便當','暑期課表','暑期學生課表','暑期學生進度','暑期老師訂餐']],['班務與行政',['值日生','清潔工作','輪值排班','行政','學生帳號密碼','行政帳號密碼','活動']],['資源與附件',['常用網站','教材庫']],['課表與資料設定',['行事曆','老師與課表','資料匯入匯出']]];
 const DEFAULT_CLASSES=['新來義','文樂','丹林','來中'];
 const ATT=['準時','遲到','早退','缺席','病假','事假','公假','長假'];
 const ATT_CODE={準時:['on','✓'],出席:['on','✓'],遲到:['late','遲'],早退:['early','早'],缺席:['absent','缺'],病假:['leave','病'],事假:['leave','事'],公假:['leave','公'],請假:['leave','假'],長假:['leave','長']};
@@ -33,6 +33,8 @@ const modules={
  '清潔工作':{key:'cleaning',desc:'分配清潔區域，完成後勾選；可複製上一週的分配。',fields:[F('date','日期','date',true),F('classId','班級','class',true),F('area','清潔區域／工作','text',true),F('studentId','負責學生','student'),F('done','已完成','checkbox'),F('note','備註','textarea')]},
  '輪值排班':{key:'duties',desc:'老師與工作人員的輪值分工。',fields:[F('title','工作項目','text',true),F('person','負責人','text',true),F('date','日期','date',true),F('done','已完成','checkbox'),F('note','備註','textarea'),F('images','圖片','images')]},
  '行政':{key:'admin',desc:'待辦、提醒與行政紀錄。',fields:[F('title','工作項目','text',true),F('person','負責人'),F('date','日期','date',true),F('done','已完成','checkbox'),F('note','內容','textarea'),F('images','圖片','images')]},
+ '學生帳號密碼':{key:'studentAccounts',desc:'學生各校系統、平台的帳號密碼紀錄。',fields:[F('studentId','學生','student',true),F('title','系統／網站名稱','text',true),F('account','帳號'),F('password','密碼'),F('url','網址','url'),F('note','備註','textarea')]},
+ '行政帳號密碼':{key:'adminAccounts',desc:'行政用系統、平台與服務的帳號密碼紀錄。',fields:[F('title','系統／網站名稱','text',true),F('person','負責人'),F('account','帳號'),F('password','密碼'),F('url','網址','url'),F('note','備註','textarea')]},
  '活動':{key:'events',desc:'規劃班級活動，收好每一份準備。',fields:[F('title','活動名稱','text',true),F('date','日期','date',true),F('classId','班級','class'),F('person','負責人'),F('note','活動內容','textarea'),F('images','圖片','images')]},
  '常用網站':{key:'links',desc:'把常用的教學資源收在一起。',fields:[F('title','網站名稱','text',true),F('url','網址','url',true),F('category','分類'),F('note','說明','textarea')]},
  '教材庫':{key:'attachments',desc:'依班級、科目整理講義與文件的雲端連結，上課一鍵開啟。',fields:[F('name','教材名稱','text',true),F('url','教材連結','url',true),F('classId','適用班級','class'),F('subject','科目','select:|英文|數學|閱讀|PASSION|線上|國語|自然|社會|其他'),F('category','類型','select:|檢定卷|檢測卷|課本|講義|學習單|習作|練習卷|考卷|解答|教案|閱讀文章|聽力|影片|圖片|簡報|其他'),F('bookLevel','英文冊別（可自訂）'),F('paperNumber','卷別（例如 1卷、2卷）'),F('stage','學段','select:|國小|國中|共用|待確認'),F('grade','適用年級','select:|1年級|2年級|3年級|4年級|5年級|6年級|7年級|8年級|9年級'),F('unit','單元／課次（例如 L10、5-1）'),F('tags','標籤（例如 單字、期中、補救）'),F('date','日期','date'),F('note','備註','textarea')]},
@@ -156,7 +158,7 @@ function summerHidden(n){if(summerOn())return false;const g=groups.find(x=>x[0]=
 function persistNav(){try{localStorage.setItem(NAVSTORE,JSON.stringify(collapsedGroups));}catch{}}
 function navigate(n){page=n;try{localStorage.setItem('sindy-classroom-page',n);}catch{}const g=groups.find(x=>x[1].includes(n));if(g)collapsedGroups=collapsedGroups.filter(x=>x!==g[0]);persistNav();filterClass='';filterDate='';search='';$('sidebar').classList.remove('open');render();window.scrollTo(0,0);}
 function render(){if(summerHidden(page))page='總覽';nav();document.body.classList.toggle('summer-mode',summerOn());$('crumb').textContent=page;
- const custom={'總覽':dashboard,'學生週誌':journalPage,'閱讀統計':readingPage,'資料匯入匯出':settingsPage,'全站搜尋':searchPage,'學校成績':schoolGradesPage,'清潔工作':cleaningPage,'個人閱讀清單':personalReadingPage,'國小認證與特殊任務':specialTasksPage,'常用網站':usefulLinksPage,'教材庫':materialsPage};
+ const custom={'總覽':dashboard,'學生週誌':journalPage,'閱讀統計':readingPage,'資料匯入匯出':settingsPage,'全站搜尋':searchPage,'學校成績':schoolGradesPage,'清潔工作':cleaningPage,'行政':adminPage,'個人閱讀清單':personalReadingPage,'國小認證與特殊任務':specialTasksPage,'常用網站':usefulLinksPage,'教材庫':materialsPage};
  if(custom[page])return custom[page]();if(page==='出席總覽'&&attView==='grid')return attendancePage();if(page==='成績登記'&&!(gSec==='all'&&gView==='list'))return gradesPage();if(page==='班級資料'&&cView==='cards')return classesPage();if(page==='學生進度'&&pView==='cards')return progressPage();if(page==='每週觀察'&&woView==='week')return weekObsPage();genericPage();}
 
 /* ---------- 班級類型、教學模式、線上 ---------- */
@@ -210,6 +212,76 @@ function studentsPage(){let rows=genericRows();if(studentGradeFilter)rows=rows.f
  const cell=(label,content,cls='')=>'<td data-label="'+label+'" class="'+cls+'">'+content+'</td>';
  const body=rows.map(s=>{const ids=[...new Set([s.classId,...(s.classIds||[])].filter(Boolean))];return '<tr>'+cell('學生','<div class="student-identity"><span class="avatar-s">'+esc(String(s.name||'?').slice(-1))+'</span><span><strong>'+esc(s.name)+'</strong><small>編號 '+esc(s.number||'未填')+'</small></span></div>','student-name')+cell('年級','<span class="grade-badge">'+esc(canonicalGrade(s.grade)||'未填年級')+'</span>'+(s.gradeReview?'<small class=grade-review>待確認升學</small>':''))+cell('學校',esc(s.school||'—'))+cell('就讀班級','<div class="student-classes">'+ids.map(id=>'<span class="student-class"><b>'+esc(className(id))+'</b><small>'+esc(classById(id)?.kind||'其他')+(id===s.classId?' · 主要班級':'')+'</small></span>').join('')+'</div>')+cell('聯絡資訊',esc(s.contact||'—'),'student-contact')+cell('狀態','<span class="st '+(s.archived?'none':'good')+'">'+(s.archived?'已離班':'在班')+'</span>')+cell('操作','<div class="actions"><button data-edit="'+esc(s.id)+'">編輯</button><button class="danger" data-delete="'+esc(s.id)+'">移除</button></div>')+'</tr>';}).join('');
  $('content').innerHTML=head('班級與學生','依班級、年級整理學生名單；主要班級與同時就讀的班級集中顯示。','<button data-action=studentDuplicates>檢查重複學生</button><button data-action="csv">↓ 匯出 CSV</button><button class="primary" data-action="add">＋ 新增學生</button>')+(!data.classes.length?noClasses():'')+'<section class="panel student-panel"><div class="filters"><label>搜尋<input type="search" id="search" value="'+esc(search)+'" placeholder="姓名、編號、學校或聯絡資訊"></label><label>班級'+classSelect('classFilter',filterClass,true)+'</label><label>年級<select id="studentGradeFilter"><option value="">全部年級</option>'+gradeOptions.map(g=>'<option '+(studentGradeFilter===g?'selected':'')+'>'+esc(g)+'</option>').join('')+'</select></label><label>狀態<select id="studentStatusFilter">'+[['active','在班學生'],['archived','已離班學生'],['all','全部學生']].map(([v,label])=>'<option value="'+v+'" '+(studentStatusFilter===v?'selected':'')+'>'+label+'</option>').join('')+'</select></label><button data-action="studentClear">清除篩選</button></div><p class="help">顯示 '+rows.length+' 位 · 在班共 '+data.students.filter(s=>!s.archived).length+' 位 · 每年 8/1 自動升一級；九年級升學需確認</p>'+(rows.length?'<div class="tablewrap"><table class="student-table"><thead><tr>'+['學生／編號','年級','學校','就讀班級','聯絡資訊','狀態','操作'].map(t=>'<th>'+t+'</th>').join('')+'</tr></thead><tbody>'+body+'</tbody></table></div>':'<div class="empty">沒有符合條件的學生。</div>')+'</section>';}
+function sanitizeTableHtml(html){try{
+ const doc=new DOMParser().parseFromString(html,'text/html'),t=doc.querySelector('table');if(!t)return '';
+ const attrs={table:['width','border','cellpadding','cellspacing','align'],col:['span','width'],colgroup:['span','width'],caption:['align'],thead:[],tbody:[],tfoot:[],tr:['height','align'],td:['colspan','rowspan','align','valign','width','height','bgcolor','nowrap'],th:['colspan','rowspan','align','valign','width','height','bgcolor','nowrap']};
+ const okStyle=/^(background|background-color|color|text-align|vertical-align|font-weight|font-size|font-family|font-style|text-decoration|text-decoration-line|white-space|line-height|letter-spacing|width|min-width|max-width|height|min-height|max-height|padding(-top|-right|-bottom|-left)?|border|border-collapse|border-spacing|border-width|border-style|border-color|border-(top|right|bottom|left)(-width|-style|-color)?)$/;
+ const bad=/url\s*\(|expression\s*\(|javascript|@import|behavior|position/i;
+ const stOf=el=>{const st=[];for(let i=0;i<el.style.length;i++){const p=el.style[i],v=el.style.getPropertyValue(p);if(okStyle.test(p)&&v&&!bad.test(v)&&!/^(initial|inherit|unset|transparent|rgba\(0, 0, 0, 0\))$/.test(v))st.push(p+':'+v);}
+  if(st.some(x=>x.startsWith('background:')))return st.filter(x=>!x.startsWith('background-color:')).join(';');return st.join(';');};
+ const walk=n=>{if(n.nodeType===3)return esc(n.textContent);if(n.nodeType!==1)return '';
+  const tag=n.tagName.toLowerCase();if(tag==='script'||tag==='style'||tag==='meta'||tag==='link')return '';
+  const inner=[...n.childNodes].map(walk).join('');
+  if(!(tag in attrs))return inner;
+  let a='';attrs[tag].forEach(k=>{const v=n.getAttribute(k);if(v&&/^[\w%.#(),\- ]+$/.test(v))a+=' '+k+'="'+esc(v)+'"';});
+  const st=stOf(n);if(st)a+=' style="'+esc(st)+'"';
+  return '<'+tag+a+'>'+inner+'</'+tag+'>';};
+ let a='';attrs.table.forEach(k=>{const v=t.getAttribute(k);if(v&&/^[\w%.#(),\- ]+$/.test(v))a+=' '+k+'="'+esc(v)+'"';});
+ const tst=stOf(t);if(tst)a+=' style="'+esc(tst)+'"';
+ return '<table class="adm-paste-tbl"'+a+'>'+[...t.childNodes].map(walk).join('')+'</table>';}catch{return '';}}
+function admLiveSerialize(el){const out=[];const walk=n=>{if(n.nodeType===3){const t=n.textContent.replace(/\s+/g,' ').trim();if(t)out.push(t);return;}
+  if(n.nodeType!==1)return;const tag=n.tagName.toLowerCase();
+  if(tag==='script'||tag==='style')return;
+  if(tag==='table'){const c=sanitizeTableHtml(n.outerHTML);if(c)out.push(c);return;}
+  const mdb=n.matches?.('[data-md-img]')?n:n.querySelector?.('[data-md-img]');
+  if(mdb){try{const im=JSON.parse(mdb.dataset.mdImg);let u=im.url||'';if(!u&&im.kind==='media'&&im.src){const id=mdMediaPut(im.src);u=id?'media:'+id:'';}if(u)out.push('!['+(im.caption||'圖片')+']('+u+')');}catch{}return;}
+  if(tag==='img'){const mid=n.dataset.mediaId;if(mid&&mdMediaGet(mid)){out.push('![圖片](media:'+mid+')');return;}
+   const src=n.getAttribute('src')||'';if(MD_DATA_IMG_RE.test(src)){const id=mdMediaPut(src);if(id){out.push('![圖片](media:'+id+')');return;}}
+   const u=mdSafeUrl(src);if(u)out.push('![圖片]('+u+')');return;}
+  if(n.querySelector&&n.querySelector('table,img,[data-md-img]')){[...n.childNodes].forEach(walk);return;}
+  const t=(n.innerText||n.textContent||'').replace(/\u00a0/g,' ').trim();if(t)out.push(t);};
+ [...el.childNodes].forEach(walk);return out.filter(Boolean).join('\n');}
+document.addEventListener('input',e=>{const lv=e.target.closest?.('.adm-live');if(!lv)return;const ta=$('editForm')?.elements.namedItem(lv.dataset.admLive);if(ta)ta.value=admLiveSerialize(lv);});
+document.addEventListener('paste',e=>{const t=e.target;if(page!=='行政'||!t)return;
+ const live=t.closest?.('.adm-live');
+ if(live){
+  const imgs=[...(e.clipboardData?.files||[])].filter(f=>/^image\//.test(f.type));
+  if(imgs.length){e.preventDefault();
+   imgs.forEach(async f=>{try{const id=await mdBlobToMedia(f),img=document.createElement('img');img.src=mdMediaGet(id);img.dataset.mediaId=id;img.className='adm-live-img';
+    const sel=getSelection(),r=sel.rangeCount?sel.getRangeAt(0):null;
+    if(r&&live.contains(r.commonAncestorContainer)){r.deleteContents();r.insertNode(img);r.setStartAfter(img);r.collapse(true);sel.removeAllRanges();sel.addRange(r);}else live.appendChild(img);
+    live.dispatchEvent(new Event('input',{bubbles:true}));}catch{toast('圖片無法讀取，請換一張試試。');}});
+   return;}
+  const html=e.clipboardData&&e.clipboardData.getData('text/html');
+  if(html&&/<table[\s>]/i.test(html)){const clean=sanitizeTableHtml(html);if(!clean)return;
+   e.preventDefault();const sel=getSelection();if(sel.rangeCount){const r=sel.getRangeAt(0);r.deleteContents();const tmp=document.createElement('div');tmp.innerHTML='<br>'+clean+'<br>';const frag=document.createDocumentFragment();let n,last;while(n=tmp.firstChild)last=frag.appendChild(n);r.insertNode(frag);if(last){r.setStartAfter(last);r.collapse(true);sel.removeAllRanges();sel.addRange(r);}}live.dispatchEvent(new Event('input',{bubbles:true}));}
+  else{e.preventDefault();const txt=e.clipboardData.getData('text/plain')||'';document.execCommand('insertText',false,txt);}
+  return;}
+ if(t.tagName!=='TEXTAREA'||!t.closest('#editForm'))return;
+ const html=e.clipboardData&&e.clipboardData.getData('text/html');if(!html||!/<table[\s>]/i.test(html))return;
+ const clean=sanitizeTableHtml(html);if(!clean)return;
+ e.preventDefault();if(t.value.trim()&&confirm('欄位裡已經有內容。\n確定＝以貼上的表格取代全部內容\n取消＝把表格加在原本內容後面')){t.value=clean;}else{const s=t.selectionStart||0,en=t.selectionEnd||0;t.value=t.value.slice(0,s)+'\n'+clean+'\n'+t.value.slice(en);}toast('已貼上表格（含合併與底色），儲存後會原樣顯示。');});
+function adminNoteHtml(text){const raw0=String(text||'');
+ if(/<table[\s>]/i.test(raw0))return raw0.split(/(<table[\s\S]*?<\/table>)/i).map(p=>/^<table[\s>]/i.test(p)?(sanitizeTableHtml(p)||esc(p)):adminNoteHtml(p)).join('');
+ const lines=raw0.split('\n').map(l=>l.replace(/\s+$/,'')),nonEmpty=lines.filter(l=>l.trim());
+ if(!nonEmpty.length)return '';
+ if(nonEmpty.some(l=>l.includes('\t')))return '<table class="adm-note-tbl">'+nonEmpty.map(l=>'<tr>'+l.split('\t').map(c=>'<td>'+esc(c.trim())+'</td>').join('')+'</tr>').join('')+'</table>';
+ const m=nonEmpty.map(l=>l.match(/^(.*?)\s+([0-9０-９]+.*)$/)||null);
+ if(nonEmpty.length>1&&m.every(x=>x))return '<table class="adm-note-tbl">'+nonEmpty.map((l,i)=>'<tr><td>'+esc(m[i][1])+'</td><td class="num">'+esc(m[i][2])+'</td></tr>').join('')+'</table>';
+ return nonEmpty.map(l=>'<p>'+admRichText(l)+'</p>').join('');}
+function admRichText(l){let out='',last=0;const re=/!\[([^\]]*)\]\((\S+)\)/g;let m;
+ while(m=re.exec(l)){out+=esc(l.slice(last,m.index));const im=typeof mdImage==='function'?mdImage(m[2],m[1]):'';out+=im||esc(m[0]);last=re.lastIndex;}
+ return out+esc(l.slice(last));}
+function adminPage(){const m=modules['行政'],rows=genericRows(),done=rows.filter(r=>r.done).length;
+ const cards=rows.map(r=>{const imgs=imagesThumbs(r.images,4),hasTable=/<table[\s>]/i.test(r.note||''),extra=hasTable&&String(r.note).replace(/<table[\s\S]*?<\/table>/gi,'').trim();
+  return '<article class="adm-card'+(r.done?' is-done':'')+'"><label class="adm-check"><input type="checkbox" data-toggle="'+esc(r.id)+'" data-field="done" '+(r.done?'checked':'')+' aria-label="已完成：'+esc(r.title||'')+'"></label>'+
+  '<div class="adm-body"><div class="adm-top"><h3>'+esc(r.title||'（未命名）')+'</h3><span class="adm-meta">'+[r.person,r.date].filter(Boolean).map(x=>'<span>'+esc(x)+'</span>').join('')+'</span></div>'+
+  (r.note?'<div class="adm-note md-body">'+adminNoteHtml(r.note)+'</div>':'<p class="help">還沒有內容。</p>')+(imgs?'<div class="rcard-imgs">'+imgs+'</div>':'')+'</div>'+
+  '<div class="adm-actions">'+(extra?'<button data-adm-keeptable="'+esc(r.id)+'" title="內容裡有表格以外的舊文字，點一下清掉，只留下貼上的表格">只留表格</button>':'')+'<button data-reader="'+esc(r.id)+'">閱讀</button><button data-edit="'+esc(r.id)+'">編輯</button><button class="danger" data-delete="'+esc(r.id)+'">移除</button></div></article>';}).join('');
+ $('content').innerHTML=head('行政',m.desc,'<button data-action="csv">↓ 匯出 CSV</button><button class="primary" data-action="add">＋ 新增紀錄</button>')+
+ '<section class="panel"><div class="filters"><label>搜尋<input id="search" type="search" value="'+esc(search)+'" placeholder="標題、負責人或內容"></label><label>日期<input id="dateFilter" type="date" value="'+esc(filterDate)+'"></label><button data-action="clearFilters">清除篩選</button></div>'+
+ '<div class="adm-sum"><span>共 <b>'+rows.length+'</b> 筆</span><span>待辦 <b>'+(rows.length-done)+'</b></span><span>已完成 <b>'+done+'</b></span></div>'+
+ (rows.length?'<div class="adm-list">'+cards+'</div>':'<div class="empty">'+(data.admin.length?'沒有符合篩選條件的紀錄。':'還沒有紀錄，從右上角新增第一筆吧。')+'</div>')+'</section>';}
 /* 長文紀錄（教案、課後教學筆記）用卡片顯示：不用左右拉，操作按鈕一直看得到 */
 const CARD_PAGES=new Set(['教案','課後教學筆記']);
 function recordCards(m,rows){const tf=m.fields.find(f=>f.key==='title')||m.fields.find(f=>f.key==='subject');
@@ -260,7 +332,9 @@ function fieldControl(f,v,row){
  if(f.type==='unit')return '<span id="unitWrap">'+unitControl(row.subject||'',v)+'</span>';
  if(f.type.startsWith('select:')){const o=f.type.slice(7).split('|');if(v&&!o.includes(v))o.unshift(v);return '<select name="'+f.key+'" '+(f.required?'required':'')+'>'+(f.required&&!v?'<option value="">請選擇</option>':'')+o.map(x=>'<option '+(v===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select>';}
  if(f.type==='images')return imagesControl(v);
- if(f.type==='textarea')return '<textarea name="'+f.key+'" '+(f.required?'required':'')+' maxlength="20000">'+esc(v)+'</textarea>'+mdToolsHtml();
+ if(f.type==='textarea'){const ta='<textarea name="'+f.key+'" '+(f.required?'required':'')+' maxlength="20000">'+esc(v)+'</textarea>';
+  if(page==='行政'&&f.key==='note')return '<div class="adm-live md-body" contenteditable="true" data-adm-live="note">'+adminNoteHtml(v)+'</div><div class="adm-live-hint"><span class="help">直接編輯：打字、貼上 Excel 表格、改格子內容都即時顯示</span><button type="button" data-adm-src>原始碼</button></div>'+ta.replace('<textarea ','<textarea hidden ');
+  return ta+mdToolsHtml();}
  if(f.type==='checkbox')return ' <input name="'+f.key+'" type="checkbox" '+(v?'checked':'')+'>';
  return '<input name="'+f.key+'" type="'+f.type+'" value="'+esc(v)+'" '+(f.required?'required':'')+' '+(f.type==='number'?'min="0" max="1000" step="any"':'maxlength="500"')+' '+(f.key==='score'&&row.exempt?'disabled':'')+'>';}
 function openEditor(id=null){const m=modules[page];editorMode='generic';$('editor').classList.remove('dlg-wide');editId=id;const row=data[m.key].find(r=>r.id===id)||{};
@@ -271,6 +345,7 @@ function openEditor(id=null){const m=modules[page];editorMode='generic';$('edito
  if(page==='班級資料')classFormToggle();if(page==='教材庫'&&typeof prepareMaterialEditor==='function')prepareMaterialEditor();$('editor').showModal();}
 function classFormToggle(){const f=$('editForm'),on=f.elements.namedItem('online')?.value==='線上',room=f.elements.namedItem('room'),meet=f.elements.namedItem('meetUrl');if(room)room.closest('label').hidden=on;if(meet)meet.closest('label').hidden=!on;}
 function submitGeneric(){const m=modules[page],old=data[m.key].find(r=>r.id===editId);const row={...old,id:editId||uid()};
+ $('editForm').querySelectorAll('.adm-live').forEach(lv=>{const ta=$('editForm').elements.namedItem(lv.dataset.admLive);if(ta)ta.value=admLiveSerialize(lv);});
  m.fields.forEach(f=>{if(f.type==='images'){row[f.key]=readImagesField($('editForm'))||[];return;}if(f.type==='classes'){row[f.key]=[...$('editForm').querySelectorAll('input[name="'+f.key+'"]:checked')].map(x=>x.value);return;}const el=$('editForm').elements.namedItem(f.key);if(!el)return;row[f.key]=f.type==='checkbox'?el.checked:el.value.trim();});
  if(m.key==='calendar'&&row.end&&row.end<row.date){toast('結束日期不可早於開始日期。');return;}
  if(m.key==='calendar'&&old?.source==='ntpc-holidays')row.source='manual';
@@ -327,7 +402,7 @@ function journalPage(){
  const absentN=all.filter(s=>isAbsentAtt(attOf(s.id))).length;
  const cardOf=s=>{const j=dj.find(x=>x.studentId===s.id),a=attOf(s.id),off=!allowedOn(s,jDate,jClass),abs=isAbsentAtt(a),allDone=j&&j.tasks.length&&j.tasks.every(t=>t.done);
   return '<article class="jcard'+(off||abs?' off':'')+(allDone?' done':'')+'"><h3><span class="jname"><span class="avatar-s" aria-hidden="true">'+esc(String(s.name||'?').slice(-1))+'</span><span>'+esc(s.name)+'<small class="help">'+esc([s.number&&'#'+s.number,s.grade||'未填年級'].filter(Boolean).join(' · '))+'</small></span></span>'+(allDone?'<span class="st good">✓ 完成</span>':'')+'</h3>'+
-  '<label class="inline">出席<select data-jatt="'+esc(s.id)+'" aria-label="'+esc(s.name)+'出席"><option value="">未點名</option>'+ATT.map(o=>'<option '+(a?.status===o?'selected':'')+'>'+o+'</option>').join('')+'</select></label>'+(a&&needWhy(a)?'<p class="attwhy"><span class="attst k-'+(ATT_CODE[a.status]||['none'])[0]+'">'+esc(a.status)+'</span> '+(attWhy(a)?esc(attWhy(a)):'<span class="help">未填原因</span>')+' <button class="linkbtn" data-attopen="'+esc(s.id+'|'+jDate)+'">'+(a.note?'修改':'補填原因')+'</button></p>':'')+cardLinks(s.id,jDate)+
+  '<label class="inline">出席<select data-jatt="'+esc(s.id)+'" aria-label="'+esc(s.name)+'出席"><option value="">未點名</option>'+ATT.map(o=>'<option '+(a?.status===o?'selected':'')+'>'+o+'</option>').join('')+'</select></label>'+(a&&a.status&&a.status!=='準時'?'<p class="attwhy"><span class="attst k-'+(ATT_CODE[a.status]||['none'])[0]+'">'+esc(a.status)+'</span>'+(attWhy(a)?' '+esc(attWhy(a)):(needWhy(a)?' <span class="help">未填原因</span>':''))+' <button class="linkbtn" data-attopen="'+esc(s.id+'|'+jDate)+'">'+(needWhy(a)&&!a.note?'補填原因':'修改')+'</button></p>':'')+cardLinks(s.id,jDate)+
   (j?((j.subject||j.content)?'<p>'+esc([j.subject,j.content].filter(Boolean).join('：'))+'</p>':'')+
    (j.tasks.length?'<div class="tasklist">'+sortTasks(j.tasks).map(t=>'<label class="checklabel"><input type="checkbox" data-jtask="'+esc(j.id)+'" data-task="'+esc(t.id)+'" '+(t.done?'checked':'')+'>'+(tTime(t)?'<span class="ttime">'+esc(tTime(t))+'</span>':'')+esc(formatAssessmentPaper(t.text))+(t.needsHelp?' ⭐ 老師需要協助':'')+'</label>').join('')+'</div>':'')+
    (j.readings.length?'<div>'+j.readings.map(chip).join('')+'</div>':'')+woLine(j.studentId,j.date)+
@@ -533,9 +608,21 @@ function collectJournalGrades(){const box=$('jGradeRows');if(!box)return {ops:[]
 function applyJournalGrades(res,sid,date,cls){res.del.forEach(id=>{data.grades=data.grades.filter(g=>g.id!==id);});
  res.ops.forEach(o=>{if(o.del){data.grades=data.grades.filter(g=>g.id!==o.del);return;}const title=o.sec==='單字檢定'?o.title.replace(/^(基礎|成長)\s*(\d+)$/,'$1$2'):o.title,isRead=title==='認讀卷';
   let ex=o.gid&&data.grades.find(g=>g.id===o.gid);if(!ex)ex=data.grades.find(g=>g.studentId===sid&&g.date===date&&g.section===o.sec&&normTitle(g.title)===normTitle(title)&&(g.paper||'')===o.paper);
-  const base={section:o.sec,title,paper:o.paper,date};if(ex)Object.assign(ex,base,o.p);else data.grades.push({id:uid(),studentId:sid,classId:cls||'',subject:gClassSubject(cls),maxScore:isRead?'50':'100',passScore:isRead?'40':o.paper==='B'?'60':'80',note:'',exempt:false,absent:false,...base,...o.p});});}
+  const base={section:o.sec,title,paper:o.paper,date};if(ex){Object.assign(ex,base,o.p);syncProgressFromGrade(ex);}else{const row={id:uid(),studentId:sid,classId:cls||'',subject:gClassSubject(cls),maxScore:isRead?'50':'100',passScore:isRead?'40':o.paper==='B'?'60':'80',note:'',exempt:false,absent:false,...base,...o.p};data.grades.push(row);syncProgressFromGrade(row);}});}
 function linkProgress(sid,date){const jj=data.journals.find(x=>x.studentId===sid&&recordClass(x)===journalClassId&&x.date===date);if(!jj)return 0;const done=new Set(jj.tasks.filter(t=>t.done).map(t=>normTitle(t.text)));let n=0;
  pCurrent(sid).cur.forEach(rec=>{let ch=false;(rec.tasks||[]).forEach(t=>{if(!t.done&&done.has(normTitle(t.text))){t.done=true;t.doneAt=date;ch=true;n++;}});if(ch){rec.done=rec.tasks.every(t=>t.done);if(String(date)>String(rec.date||''))rec.date=date;}});return n;}
+function syncProgressFromGrade(g){
+ if(!g||!g.studentId||g.absent)return;
+ const key=normTitle(g.title);if(!key)return;
+ const ok=gStatus(g)[0]==='good'||g.exempt||g.passed;
+ const tail=(s,k)=>{const x=s.slice(k.length);return !x||!/^[a-z0-9]/i.test(x);};
+ pCurrent(g.studentId).cur.forEach(r=>{
+  const u=normTitle(r.unit),ub=normTitle([r.book,r.unit].filter(Boolean).join(''));
+  if(!u||!(u===key||ub===key||(u.startsWith(key)&&tail(u,key))||(key.startsWith(u)&&tail(key,u))))return;
+  const v=scoreOf(g);if(v!=null)r.score=String(v);else if(g.passed)r.score='PASS';else if(g.exempt)r.score='免';
+  if(String(g.date)>String(r.date||''))r.date=g.date;
+  if(!(r.tasks||[]).length){if(ok)r.done=true;return;}
+  if(ok){r.tasks.forEach(t=>{if(!t.done&&normTitle(t.text).includes(u)){t.done=true;t.doneAt=g.date||today();}});if(r.tasks.every(t=>t.done))r.done=true;}});}
 function cardLinks(sid,date){const pc=pCurrent(sid).cur,gd=data.grades.filter(g=>g.studentId===sid&&g.date===date);if(!pc.length&&!gd.length)return '';
  return '<div class="jlinks">'+pc.map(r=>{const t=r.tasks||[];return '<span class="jl" title="學生進度"><span class="kdot k-'+(SUBJ_CLS[r.subject]||'other')+'"></span>'+esc((r.subject||'')+' '+(r.unit||''))+' <b>'+(t.length?t.filter(x=>x.done).length+'/'+t.length:(r.done?'✓':''))+'</b></span>';}).join('')+gd.map(g=>{let v=gCellVal(g);if(g.exempt&&g.section==='單字檢定'){const lv=vocabLevelOf(sid);v=(lv.next||lv.passed)?'目前 '+(lv.next||lv.passed):'免';}return '<span class="jl st '+gStatus(g)[0]+'" title="今日成績'+(g.exempt?'（免考）':'')+'">'+esc(gTitle(g))+' '+esc(v)+'</span>';}).join('')+'</div>';}
 function obsHistHtml(sid,curId){if(!sid)return '';const items=data.weeklyObs.filter(x=>x.studentId===sid&&obsSubjectOf(x)===obsContextSubject()&&x.id!==curId&&(x.note||x.next)).sort((a,b)=>String(b.week).localeCompare(String(a.week)));
@@ -758,7 +845,7 @@ function gCellChange(t){const d=t.dataset,sec=d.gsec,sid=d.sid,cls=gClass,subj=g
  const p=gParse(t.value);if(p===undefined){toast('請輸入 0–1000 的分數、PASS（通過），或「缺」「免」；清空即刪除。');t.focus();return;}
  const ex=gLatest(data.grades.filter(match));
  if(sec==='數學檢測'&&p&&p.score!==''&&Number(p.score)>gMax(ex||base)){toast('分數不可超過設定的滿分 '+gMax(ex||base)+'。');t.focus();return;}
- if(p===null){if(!ex)return;data.grades=data.grades.filter(g=>g!==ex);}else if(ex){if(gCellVal(ex)===t.value.trim())return;Object.assign(ex,p);}else data.grades.push({id:uid(),...base,...p,note:''});
+ if(p===null){if(!ex)return;data.grades=data.grades.filter(g=>g!==ex);}else if(ex){if(gCellVal(ex)===t.value.trim())return;Object.assign(ex,p);syncProgressFromGrade(ex);}else{const row={id:uid(),...base,...p,note:''};data.grades.push(row);syncProgressFromGrade(row);}
  data.grades.forEach(g=>delete g._n);changed();
  setTimeout(()=>{const a=document.activeElement,ck=a&&a.dataset?a.dataset.ck:null,sl=[...document.querySelectorAll('.tablewrap')].map(x=>x.scrollLeft),y=window.scrollY;render();document.querySelectorAll('.tablewrap').forEach((x,i)=>x.scrollLeft=sl[i]||0);window.scrollTo(0,y);if(ck){const n=document.querySelector('.gcell[data-ck="'+CSS.escape(ck)+'"]');if(n)n.focus();}},0);}
 // 各區資料
@@ -856,7 +943,7 @@ function submitGradeBatch(){const f=$('editForm'),g=n=>f.elements.namedItem(n).v
   if(!ex&&!score&&!exempt&&!absent&&!note)return;
   const parsed=gParse(score)||{score:'',passed:false,exempt:false,absent:false};
   const row={...base,studentId:sid,...parsed,note};if(exempt)Object.assign(row,{exempt:true,absent:false,passed:false,score:''});else if(absent)Object.assign(row,{exempt:false,absent:true,passed:false,score:''});
-  if(ex)Object.assign(ex,row);else data.grades.push({id:uid(),...row});n++;});
+  if(ex){Object.assign(ex,row);syncProgressFromGrade(ex);}else{const nr={id:uid(),...row};data.grades.push(nr);syncProgressFromGrade(nr);}n++;});
  if(!n){toast('沒有輸入任何成績。');return;}
  gSec=base.section;$('editor').close();changed();render();toast('已儲存 '+n+' 位學生的成績。');}
 
@@ -1028,6 +1115,8 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
  if(d.nav){if(d.nav==='學生週誌')jClass=journalClassFor(jDate)||jClass;return navigate(d.nav);}
  if(d.pin){data.pins=data.pins.includes(d.pin)?data.pins.filter(p=>p!==d.pin):[...data.pins,d.pin];changed();nav();return;}
  if(d.edit)return openEditor(d.edit);if(d.delete)return removeRow(d.delete);
+ if(d.admKeeptable){const r=data.admin.find(x=>x.id===d.admKeeptable);if(r&&/<table[\s>]/i.test(r.note||'')&&confirm('清掉表格以外的舊文字，只留下貼上的表格？')){r.note=(String(r.note).match(/<table[\s\S]*?<\/table>/gi)||[]).join('\n');changed();render();toast('已只保留表格。');}return;}
+ if('admSrc' in d){const ta=$('editForm').elements.namedItem('note'),lv=$('editForm').querySelector('.adm-live');if(ta&&lv){if(ta.hidden){ta.value=admLiveSerialize(lv);ta.hidden=false;b.textContent='回到預覽編輯';}else{lv.innerHTML=adminNoteHtml(ta.value);ta.hidden=true;b.textContent='原始碼';}}return;}
  if(d.holdel){const r=data.calendar.find(x=>x.id===d.holdel);if(r&&confirm('移除「'+r.title+'」（'+r.date+(r.end?' ～ '+r.end:'')+'）？')){removeCalendarEntry(d.holdel);changed();render();}return;}
  if(d.leavedel!=null)return removeLeaveBlock(+d.leavedel);
  if(d.unitrename){renameUnit(gClass,d.unitrename);return;}
@@ -1107,8 +1196,9 @@ document.addEventListener('change',e=>{const t=e.target,id=t.id,d=t.dataset;if(t
  if($('editor').open&&editorMode==='generic'){if(page==='班級資料'&&t.name==='online')classFormToggle();
   if(t.name==='subject'&&modules[page]?.fields.some(f=>f.type==='unit')){$('unitWrap').innerHTML=unitControl(t.value,'');}
   if(t.name==='exempt'){const s=$('editForm').elements.namedItem('score');if(s){s.disabled=t.checked;if(t.checked)s.value='';}}}});
-document.addEventListener('input',e=>{if(e.target.classList&&e.target.classList.contains('booktitle')){const row=e.target.closest('[data-row]');if(row)row.dataset.bookid='';showBookSug(e.target);return;}if(e.target.id==='search'){const p=e.target.selectionStart;search=e.target.value;render();const s=$('search');if(s){s.focus();s.setSelectionRange(p,p);}}
- if(e.target.id==='gsearch'){gq=e.target.value;if(gq.trim()){if(page!=='全站搜尋'){page='全站搜尋';}render();}else if(page==='全站搜尋')render();}});
+document.addEventListener('input',e=>{if(e.target.classList&&e.target.classList.contains('booktitle')){const row=e.target.closest('[data-row]');if(row)row.dataset.bookid='';showBookSug(e.target);return;}if(e.target.id==='search'){const t=e.target,p=t.selectionStart;search=t.value;if(e.isComposing)return;clearTimeout(window._searchTimer);window._searchTimer=setTimeout(()=>{render();const s=$('search');if(s){s.focus();s.setSelectionRange(p,p);}},150);}
+ if(e.target.id==='gsearch'){gq=e.target.value;if(e.isComposing)return;if(gq.trim()){if(page!=='全站搜尋'){page='全站搜尋';}render();}else if(page==='全站搜尋')render();}});
+document.addEventListener('compositionend',e=>{if(e.target.id==='search'){search=e.target.value;render();}if(e.target.id==='gsearch'){gq=e.target.value;if(page==='全站搜尋'||gq.trim())render();}});
 document.addEventListener('change',e=>{if(e.target.name==='attendance')updateAttendanceReasonUI(e.target.value);});
 document.addEventListener('click',e=>{if(e.target.closest('button[data-attpick]'))updateAttendanceReasonUI(attPick,true);});
 $('editForm').addEventListener('submit',e=>{e.preventDefault();editorMode==='journal'?submitJournal():editorMode==='gbatch'?submitGradeBatch():editorMode==='progress'?submitProgress():submitGeneric();});
