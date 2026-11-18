@@ -1094,6 +1094,8 @@ body.summer-mode .primary:hover{background:linear-gradient(135deg,#33ad9d,#25897
 .adm-live table{margin:6px 0}
 .adm-live img,.adm-live-img{max-width:100%;max-height:260px;border-radius:8px;display:block;margin:4px 0}
 .adm-note img{max-width:100%}
+.material-cloud-view{margin-left:4px;font-size:11px;text-decoration:none;opacity:.65;vertical-align:middle}
+.material-cloud-view:hover{opacity:1}
 .adm-live-hint{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 8px}
 .adm-live-hint button{font-size:12px;padding:3px 10px}
 .adm-actions{display:flex;flex-wrap:wrap;gap:6px;flex:0 0 auto}.adm-actions button{padding:5px 10px;white-space:nowrap}

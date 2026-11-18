@@ -2,6 +2,17 @@
 let matClass='',matSubject='',matCat='',matQuery='',matGrade='',matStar=false,matSort='date',matPage=1,matStage='';
 const MAT_SUBJECTS=['英文','數學','閱讀','PASSION','線上','國語','自然','社會','其他'];
 function materialUrl(u){try{const x=new URL(String(u||'').trim());return ['https:','http:'].includes(x.protocol)?x:null;}catch{return null;}}
+/* 檔案連結 → 直接下載／本機程式開啟（Google Drive 檔案→下載、Google 文件→docx、Excel→xlsx、簡報→pptx、OneDrive→直下載）；不是檔案的連結原樣回傳 */
+function officeUrl(u){try{const x=new URL(String(u||'').trim()),h=x.hostname;
+ if(h==='drive.google.com'||h==='docs.google.com'){
+  if(x.pathname.includes('/folders/'))return x.href;
+  const fid=(x.pathname.match(/\/d\/([\w-]{10,})/)||[])[1]||x.searchParams.get('id');if(!fid)return x.href;
+  if(h==='docs.google.com'||x.pathname.startsWith('/document')||x.pathname.startsWith('/spreadsheets')||x.pathname.startsWith('/presentation')){
+   const fmt=x.pathname.includes('document')?'docx':x.pathname.includes('spreadsheets')?'xlsx':x.pathname.includes('presentation')?'pptx':'docx';
+   return 'https://docs.google.com/'+(fmt==='docx'?'document':fmt==='xlsx'?'spreadsheets':'presentation')+'/d/'+fid+'/export?format='+fmt;}
+  return 'https://drive.google.com/uc?export=download&id='+fid;}
+ if((h==='1drv.ms'||h==='onedrive.live.com'||h==='photos.onedrive.com'||/(^|\.)sharepoint\.com$/.test(h))&&typeof oneDriveDirect==='function')return oneDriveDirect(x.href);
+ return x.href;}catch{return String(u||'');}}
 function materialRows(){const q=matQuery.trim().toLowerCase();return data.attachments.filter(m=>(typeof matNewsYear==='undefined'||!matNewsYear||String(m.year)===matNewsYear)&&materialInFolder(m,matFolder)&&(!matClass||(matClass==='any'?!m.classId:m.classId===matClass))&&(!matSubject||materialSection(m)===matSubject)&&(!matCat||(m.category||'其他')===matCat)&&(!matStage||materialStage(m)===matStage)&&(!matBook||englishMaterialParts(m).book===matBook)&&(!matPaper||englishMaterialParts(m).paper===matPaper)&&(!matGrade||m.grade===matGrade)&&(!matStar||m.starred)&&(!q||[m.name,m.subject,m.category,materialStage(m),englishMaterialParts(m).book,englishMaterialParts(m).paper,m.grade,m.unit,m.tags,m.note,m.url,className(m.classId)].join(' ').toLowerCase().includes(q))).sort((a,b)=>a.series==='每週國內外大事'&&b.series===a.series?(b.year-a.year||b.issueNumber-a.issueNumber||String(b.period||'').localeCompare(String(a.period||''))):matSort==='name'?String(a.name||'').localeCompare(String(b.name||''),'zh-Hant',{numeric:true}):String(b.date||'').localeCompare(String(a.date||''))||String(a.name||'').localeCompare(String(b.name||''),'zh-Hant',{numeric:true}));}
 function mergeMaterialRows(list){const map=new Map(data.attachments.map(m=>[m.id,m]));let add=0,upd=0;(list||[]).forEach(r=>{if(!r||typeof r!=='object'||!r.id)return;if(map.has(r.id)){Object.assign(map.get(r.id),r);upd++;}else{data.attachments.push(r);map.set(r.id,r);add++;}});return{add,upd};}
 let matlibAutoTried=false;
