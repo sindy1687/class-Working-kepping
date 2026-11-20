@@ -2,7 +2,7 @@
 /* ---------- Google 雲端同步（透過 Google Apps Script 網頁應用程式） ---------- */
 const CLOUD_URL_DEFAULT='https://script.google.com/macros/s/AKfycby67dKHZ4xfrEyWDu30AmU4nkNbBEahae1XYtgfXtZpFRS9qlda9jTRTUfiILF19xvP/exec';
 const CLOUD_URL_KEY='sindy-cloud-url',CLOUD_SYNCED_KEY='sindy-cloud-synced-v1';
-const CLOUD_EXTRA_LABELS={'meta.materialFolders':'教材資料夾',settings:'系統設定','meta.cleaningJobs':'清潔工作項目','meta.mathAssessments':'數學檢測設定','meta.readingMedia':'閱讀照片','meta.schoolExams':'學校考試設定','meta.schoolSubjectLists':'學校科目','meta.gradePromotionLog':'升年級紀錄','meta.mdMedia':'教案圖片'};
+const CLOUD_EXTRA_LABELS={'meta.materialFolders':'教材資料夾',settings:'系統設定','meta.cleaningJobs':'清潔工作項目','meta.mathAssessments':'數學檢測設定','meta.readingMedia':'閱讀照片','meta.schoolExams':'學校考試設定','meta.schoolSubjectLists':'學校科目','meta.gradePromotionLog':'升年級紀錄','meta.mdMedia':'教案圖片','meta.terms':'學期設定','meta.materialCategories':'教材分類','meta.materialSubjects':'教材科目'};
 const CLOUD_SETTINGS_ARRAYS=['pins','mathUnits','kistLessons'];
 const CLOUD_STALE_CACHE_KEY='sindy-local-cache-stale';
 function cloudCacheStale(){let stale;try{stale=localStorage.getItem(CLOUD_STALE_CACHE_KEY)==='1';}catch{stale=true;}return stale&&!(typeof bigStore!=='undefined'&&bigStore.loaded&&bigStore.json!=null);}

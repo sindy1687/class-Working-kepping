@@ -15,7 +15,7 @@ function englishMaterialParts(m){
 function englishMaterialNavigation(){
  if(matSubject!=='英文')return '';
  const all=data.attachments.filter(m=>materialSection(m)==='英文'&&(!matStage||materialStage(m)===matStage));
- const types=[...new Set(['檢測卷','課本','檢定卷','練習卷','解答',...all.map(m=>m.category||'其他')])];
+ const types=[...new Set([...(typeof matCategories==='function'?matCategories():['檢測卷','課本','檢定卷','練習卷','解答']),...all.map(m=>m.category||'其他')])];
  const byType=all.filter(m=>!matCat||(m.category||'其他')===matCat);
  const books=[...new Set(byType.map(m=>englishMaterialParts(m).book))].sort((a,b)=>{const ai=MATERIAL_BOOKS.indexOf(a),bi=MATERIAL_BOOKS.indexOf(b);return (ai<0?99:ai)-(bi<0?99:bi)||a.localeCompare(b,'zh-Hant');});
  const papers=[...new Set(byType.filter(m=>!matBook||englishMaterialParts(m).book===matBook).map(m=>englishMaterialParts(m).paper))].sort((a,b)=>a.localeCompare(b,'zh-Hant',{numeric:true}));

@@ -46,12 +46,14 @@ function prepareMaterialEditor(){
  const box=document.createElement('div');box.className='wide material-link-tools';
  box.innerHTML='<button type="button" data-material-title>讀取連結名稱</button><button type="button" data-material-suggest>依名稱建議分類</button><span id="materialLinkStatus" role="status" aria-live="polite">貼上網址後會自動讀取名稱；原有名稱會保留。</span>';
  url.closest('label').after(box);const parts=englishMaterialParts(data.attachments.find(m=>m.id===editId)||{});['bookLevel','paperNumber'].forEach((k,i)=>{const el=f.elements.namedItem(k);if(el&&!el.value){const value=i===0?parts.book:parts.paper;el.value=i===0?(matBook||(!value.startsWith('待確認')?value:'')):(matPaper||(value!=='未標卷別'?value:''));}});url.placeholder='貼上 Google 雲端檔案或教材網頁連結';
+ const catSel=f.elements.namedItem('category');if(catSel&&typeof matCategories==='function'){const cur=catSel.value,opts=matCategories();catSel.innerHTML='<option value=""></option>'+opts.map(c=>'<option '+(c===cur?'selected':'')+'>'+esc(c)+'</option>').join('')+(cur&&!opts.includes(cur)?'<option selected>'+esc(cur)+'</option>':'');}
+ const subSel=f.elements.namedItem('subject');if(subSel&&typeof matSubjects==='function'){const cur=subSel.value,opts=[...new Set([...matSubjects(),...MAT_SUBJECTS])];subSel.innerHTML='<option value=""></option>'+opts.map(c=>'<option '+(c===cur?'selected':'')+'>'+esc(c)+'</option>').join('')+(cur&&!opts.includes(cur)?'<option selected>'+esc(cur)+'</option>':'');}
  ['subject','category','grade','unit'].forEach(key=>{const field=f.elements.namedItem(key);if(field&&editId==null&&!field.value){const value=key==='subject'?matSubject:key==='category'?matCat:'';if(value)field.value=value;}});
  if(!editId&&matClass&&matClass!=='any')f.elements.namedItem('classId').value=matClass;
 }
 function suggestMaterialClassification(){
  const f=$('editForm'),hints=materialSuggestions(f.elements.namedItem('name').value);let count=0;
- Object.entries(hints).forEach(([k,v])=>{const el=f.elements.namedItem(k);if(el&&(!el.value||el.value==='其他')){el.value=v;count++;}});
+ Object.entries(hints).forEach(([k,v])=>{const el=f.elements.namedItem(k);if(el&&(!el.value||el.value==='其他')){if(el.tagName==='SELECT'&&v&&![...el.options].some(o=>o.value===v)){const o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o);}el.value=v;count++;}});
  const status=$('materialLinkStatus');if(status)status.textContent=count?'已帶入 '+count+' 項分類建議，請確認後儲存。':'可自行選擇科目、類型，並加上年級、單元及標籤。';
 }
 async function lookupMaterialTitle(force=false){

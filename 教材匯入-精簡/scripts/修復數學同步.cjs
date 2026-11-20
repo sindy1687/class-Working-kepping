@@ -1,0 +1,4 @@
+const fs=require('fs'),assert=require('assert');const read=n=>JSON.parse(Buffer.from(fs.readFileSync('教材匯入/'+n+'.base64','utf8').trim(),'base64').toString('utf8'));
+const current=read('同步修復教材前'),folders=read('同步修復目錄前'),math=require('./教材庫-加入數學.json').filter(x=>x.subject==='數學'),fullFolders=require('./教材資料夾-加入數學.json');
+const ids=new Set(current.flatMap(x=>[x.id,...(x.alternateFiles||[]).map(a=>'drive-'+a.driveFileId)]));let added=0;for(const row of math)if(!ids.has(row.id)){current.push(row);ids.add(row.id);added++;}
+const catalog=[...new Map([...folders,...fullFolders].map(x=>[x.id,x])).values()];assert.equal(catalog.length,1148);assert(current.some(x=>x.subject==='數學'));fs.writeFileSync('教材匯入/教材庫-同步修復.json',JSON.stringify(current));fs.writeFileSync('教材匯入/教材資料夾-同步修復.json',JSON.stringify(catalog));console.log(JSON.stringify({restoredMath:added,materials:current.length,folders:catalog.length}));
