@@ -2,7 +2,7 @@
 /* ---------- Google 雲端同步（透過 Google Apps Script 網頁應用程式） ---------- */
 const CLOUD_URL_DEFAULT='https://script.google.com/macros/s/AKfycby67dKHZ4xfrEyWDu30AmU4nkNbBEahae1XYtgfXtZpFRS9qlda9jTRTUfiILF19xvP/exec';
 const CLOUD_URL_KEY='sindy-cloud-url',CLOUD_SYNCED_KEY='sindy-cloud-synced-v1';
-const CLOUD_EXTRA_LABELS={'meta.materialFolders':'教材資料夾',settings:'系統設定','meta.cleaningJobs':'清潔工作項目','meta.mathAssessments':'數學檢測設定','meta.readingMedia':'閱讀照片','meta.schoolExams':'學校考試設定','meta.schoolSubjectLists':'學校科目','meta.gradePromotionLog':'升年級紀錄','meta.mdMedia':'教案圖片','meta.terms':'學期設定','meta.materialCategories':'教材分類','meta.materialSubjects':'教材科目'};
+const CLOUD_EXTRA_LABELS={gameScores:'遊戲成績','meta.gameWordLists':'英文遊戲單字表','meta.materialFolders':'教材資料夾',settings:'系統設定','meta.cleaningJobs':'清潔工作項目','meta.mathAssessments':'數學檢測設定','meta.readingMedia':'閱讀照片','meta.schoolExams':'學校考試設定','meta.schoolSubjectLists':'學校科目','meta.gradePromotionLog':'升年級紀錄','meta.mdMedia':'教案圖片','meta.terms':'學期設定','meta.materialCategories':'教材分類','meta.materialSubjects':'教材科目'};
 const CLOUD_SETTINGS_ARRAYS=['pins','mathUnits','kistLessons'];
 const CLOUD_STALE_CACHE_KEY='sindy-local-cache-stale';
 function cloudCacheStale(){let stale;try{stale=localStorage.getItem(CLOUD_STALE_CACHE_KEY)==='1';}catch{stale=true;}return stale&&!(typeof bigStore!=='undefined'&&bigStore.loaded&&bigStore.json!=null);}
@@ -10,6 +10,10 @@ function cloudCacheData(){const json=JSON.stringify(data);try{localStorage.setIt
 const cloud={url:'',synced:{},ver:{},conflicts:0,timer:null,retry:null,busy:false,again:false,lastPull:0,state:'',msg:''};
 function cloudLoadSynced(){try{const s=JSON.parse(localStorage.getItem(CLOUD_SYNCED_KEY)||'{}')||{};cloud.synced=s.hash||{};cloud.ver=s.ver||{};}catch{cloud.synced={};cloud.ver={};}}
 cloud.url=CLOUD_URL_DEFAULT;try{const u=localStorage.getItem(CLOUD_URL_KEY);if(u!==null)cloud.url=u;}catch{}cloudLoadSynced();
+const CLOUD_PAUSED_KEY='sindy-cloud-paused';cloud.paused=false;try{cloud.paused=localStorage.getItem(CLOUD_PAUSED_KEY)==='1';}catch{}
+function cloudOn(){return !!cloud.url&&!cloud.paused;}
+function cloudSetPaused(on){cloud.paused=!!on;try{on?localStorage.setItem(CLOUD_PAUSED_KEY,'1'):localStorage.removeItem(CLOUD_PAUSED_KEY);}catch{}clearTimeout(cloud.timer);cloud.again=false;cloudSidefoot();cloudSetState('','');if(typeof render==='function')render();
+ if(on)toast('已關閉雲端同步：之後的修改只存在這台電腦。');else{toast('已開啟雲端同步，正在與雲端合併資料…');cloud.lastPull=0;cloudPull({force:true});}}
 
 function cloudLabel(key){const m=Object.entries(modules).find(([,v])=>v.key===key);return m?m[0]:CLOUD_EXTRA_LABELS[key]||key;}
 function cloudFileName(key){return cloudLabel(key).replace(/[\\/:*?"<>|]/g,'_')+' ('+key+').json';}
@@ -30,8 +34,8 @@ function cloudMerge(lv,rv){const rec=a=>Array.isArray(a)&&a.every(x=>x&&typeof x
 function cloudDirty(){const packed=cloudPack(data),out={};for(const [k,v] of Object.entries(packed)){if(['meta.materialFolders','meta.weeklyNewsSync'].includes(k))continue;const s=JSON.stringify(v),h=cloudHash(s);if(cloud.synced[k]!==h)out[k]={s,h};}return out;}
 function cloudTime(){return new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});}
 function cloudSetState(state,msg){cloud.state=state;cloud.msg=msg||'';if(state==='error')status('☁ '+cloud.msg,true);else if(msg)status('☁ '+msg);const el=document.getElementById('cloudState');if(el)el.innerHTML=cloudStateHtml();}
-function cloudStateHtml(){if(!cloud.url)return '尚未連接 Google 雲端，資料只存在這個瀏覽器。';return (cloud.state==='error'?'<span class="error">⚠ ':'☁ ')+esc(cloud.msg||'已連接 Google 雲端')+(cloud.state==='error'?'</span>':'');}
-function cloudPanel(){return '<section class="panel"><h2>Google 雲端同步</h2><p id="cloudState">'+cloudStateHtml()+'</p><label>雲端同步網址（Google Apps Script 網頁應用程式）<input id="cloudUrl" placeholder="https://script.google.com/macros/s/…/exec" value="'+esc(cloud.url)+'"></label><div class="actions" style="margin-top:10px"><button class="primary" data-cloud="sync">☁ 立即同步</button><button data-cloud="pull">↓ 從雲端重新下載</button></div><p class="help" style="margin-top:14px">開啟網站時會自動從雲端資料夾下載最新資料；修改後約 2 秒自動上傳。每個功能分開存成一個檔案（例如「學生週誌 (journals).json」），雲端每天也會自動保留一份備份。</p></section>';}
+function cloudStateHtml(){if(!cloud.url)return '尚未連接 Google 雲端，資料只存在這個瀏覽器。';if(cloud.paused)return '<span class="error">⏸ 雲端同步已關閉</span>：修改只存在這個瀏覽器，不會上傳，也不會從雲端下載。';return (cloud.state==='error'?'<span class="error">⚠ ':'☁ ')+esc(cloud.msg||'已連接 Google 雲端')+(cloud.state==='error'?'</span>':'');}
+function cloudPanel(){return '<section class="panel"><h2>Google 雲端同步</h2><p id="cloudState">'+cloudStateHtml()+'</p><label>雲端同步網址（Google Apps Script 網頁應用程式）<input id="cloudUrl" placeholder="https://script.google.com/macros/s/…/exec" value="'+esc(cloud.url)+'"></label><div class="actions" style="margin-top:10px">'+(cloud.paused?'<button class="primary" data-cloud-toggle="on">▶ 開啟雲端同步</button>':'<button class="primary" data-cloud="sync">☁ 立即同步</button><button data-cloud="pull">↓ 從雲端重新下載</button><button data-cloud-toggle="off">⏸ 關閉雲端同步</button>')+'</div><p class="help" style="margin-top:14px">開啟網站時會自動從雲端資料夾下載最新資料；修改後約 2 秒自動上傳。每個功能分開存成一個檔案（例如「學生週誌 (journals).json」），雲端每天也會自動保留一份備份。</p></section>';}
 
 async function cloudFetch(opts){const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),60000);
  try{const r=await fetch(opts?cloud.url:cloud.url+(cloud.url.includes('?')?'&':'?')+'action=load&t='+Date.now(),{...(opts||{}),cache:'no-store',redirect:'follow',signal:ctl.signal});if(!r.ok)throw Error('HTTP '+r.status);
@@ -40,7 +44,7 @@ async function cloudFetch(opts){const ctl=new AbortController(),t=setTimeout(()=
 
 async function cloudPull(opts={}){
  if(typeof bigBoot!=='undefined'&&!bigStore.loaded){try{await bigBoot;}catch{}}
- if(!cloud.url||cloud.busy)return;if($('editor').open&&!opts.force)return;
+ if(!cloudOn()||cloud.busy)return;if($('editor').open&&!opts.force)return;
  cloud.busy=true;cloudSetState('busy','正在從雲端下載…');
  try{const j=await cloudFetch(),remote=j.files||{},rkeys=Object.keys(remote);cloud.lastPull=Date.now();
   const local=cloudPack(data),stored=cloudStoredHashes(),first=!Object.keys(cloud.synced).length;
@@ -66,7 +70,7 @@ async function cloudPull(opts={}){
  catch(e){cloud.busy=false;cloudSetState('error','雲端下載失敗：'+e.message+'（目前使用這台電腦的資料）');}}
 
 async function cloudPush(now){
- if(!cloud.url)return;clearTimeout(cloud.timer);
+ if(!cloudOn())return;clearTimeout(cloud.timer);
  if(!now){cloud.timer=setTimeout(()=>cloudPush(true),2000);return;}
  if(cloud.busy){cloud.again=true;return;}
  const dirty=cloudDirty(),keys=Object.keys(dirty);if(!keys.length){if(cloud.state!=='error'&&cloud.msg.startsWith('正在'))cloudSetState('ok','已同步 · '+cloudTime());return;}
@@ -78,22 +82,26 @@ async function cloudPush(now){
   cloud.conflicts=0;cloudSetState('ok','已上傳到雲端 · '+cloudTime());
   if(cloud.again||Object.keys(cloudDirty()).length)cloudPush();}
  catch(e){cloud.busy=false;cloudSetState('error','上傳失敗：'+e.message+'，30 秒後重試（資料已存在這台電腦）');clearTimeout(cloud.retry);cloud.retry=setTimeout(()=>cloudPush(true),30000);}}
-function cloudSchedule(){if(cloud.url&&!cloud.busy)cloudPush();else if(cloud.url)cloud.again=true;}
-function cloudFlushBeacon(){if(!cloud.url||!navigator.sendBeacon)return;const dirty=cloudDirty(),keys=Object.keys(dirty);if(!keys.length)return;
+function cloudSchedule(){if(!cloudOn())return;if(!cloud.busy)cloudPush();else cloud.again=true;}
+function cloudFlushBeacon(){if(!cloudOn()||!navigator.sendBeacon)return;const dirty=cloudDirty(),keys=Object.keys(dirty);if(!keys.length)return;
  const files={};for(const k of keys)files[k]={name:cloudFileName(k),json:dirty[k].s,base:cloud.ver[k]||''};const body=JSON.stringify({action:'save',files});
  if(body.length<60000)navigator.sendBeacon(cloud.url,new Blob([body],{type:'text/plain;charset=utf-8'}));}
 function cloudSetUrl(v){v=v.trim();if(v&&!/^https:\/\/script\.google(usercontent)?\.com\//.test(v)){toast('網址須以 https://script.google.com/ 開頭。');return false;}
  if(v===cloud.url)return true;cloud.url=v;cloud.synced={};cloud.ver={};cloudSaveSynced();try{localStorage.setItem(CLOUD_URL_KEY,v);}catch{}cloudSidefoot();
  if(v)cloudPull({force:true});else cloudSetState('','');return true;}
-function cloudSidefoot(){const el=document.querySelector('.sidefoot');if(el)el.innerHTML=cloud.url?'資料自動同步到 Google 雲端<br>並保存在這個瀏覽器':'資料自動儲存在這個瀏覽器<br>請定期到「資料匯入匯出」備份';}
+function cloudSidefoot(){const el=document.querySelector('.sidefoot');if(el)el.innerHTML=cloud.url&&cloud.paused?'⏸ 雲端同步已關閉<br>資料只存在這個瀏覽器':cloud.url?'資料自動同步到 Google 雲端<br>並保存在這個瀏覽器':'資料自動儲存在這個瀏覽器<br>請定期到「資料匯入匯出」備份';}
 
 document.addEventListener('change',e=>{if(e.target.id==='cloudUrl')cloudSetUrl(e.target.value);});
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-cloud]');if(!b)return;const u=$('cloudUrl');if(u&&u.value.trim()!==cloud.url&&!cloudSetUrl(u.value))return;
  if(!cloud.url){toast('請先貼上雲端同步網址。');return;}
+ if(cloud.paused){toast('雲端同步已關閉，請先按「開啟雲端同步」。');return;}
  if(b.dataset.cloud==='sync'){cloud.lastPull=0;cloudPull({force:true});}
  else if(b.dataset.cloud==='pull'&&confirm('用雲端資料取代這台電腦的資料？系統會先下載一份目前資料備份。')){exportData();cloud.busy=false;cloudPull({force:true,replace:true});}});
-document.addEventListener('visibilitychange',()=>{if(!cloud.url)return;if(document.visibilityState==='hidden')cloudFlushBeacon();else if(Date.now()-cloud.lastPull>60000&&!Object.keys(cloudDirty()).length)cloudPull();});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-cloud-toggle]');if(!b)return;
+ if(b.dataset.cloudToggle==='off'){if(confirm('關閉雲端同步？\n\n關閉後，修改只會存在這台電腦，不會上傳到 Google 雲端，也不會下載其他電腦的修改。之後可隨時重新開啟，開啟時會與雲端合併。'))cloudSetPaused(true);}
+ else cloudSetPaused(false);});
+document.addEventListener('visibilitychange',()=>{if(!cloudOn())return;if(document.visibilityState==='hidden')cloudFlushBeacon();else if(Date.now()-cloud.lastPull>60000&&!Object.keys(cloudDirty()).length)cloudPull();});
 window.addEventListener('pagehide',cloudFlushBeacon);
 window.addEventListener('storage',e=>{if(e.key===CLOUD_SYNCED_KEY)cloudLoadSynced();});
 cloudSidefoot();
-if(cloud.url)cloudPull({force:true});
+if(cloudOn())cloudPull({force:true});

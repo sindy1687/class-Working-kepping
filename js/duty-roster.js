@@ -26,7 +26,7 @@ function dutyMonthEnd(date){const d=new Date(date.slice(0,7)+'-01T00:00:00');d.s
 // 區域＝班級名稱去掉科目與班別後的地名
 function dutyAreaOf(c){return areaOfClass(c);}
 function dutyClasses(){return data.classes.filter(c=>c.online!=='線上');}
-function dutyAreaCount(a){return data.students.filter(s=>!s.archived&&studentArea(s)===a).length;}
+function dutyAreaCount(a){return data.students.filter(s=>!s.archived&&!closedStudent(s)&&studentArea(s)===a).length;}
 function dutyAreas(){const m=new Map();dutyClasses().forEach(c=>{const a=dutyAreaOf(c);if(!m.has(a))m.set(a,[]);m.get(a).push(c.id);});data.students.forEach(s=>{const a=studentArea(s);if(!s.archived&&a!=='未分區'&&!m.has(a))m.set(a,[]);});return m;}
 function dutyScopes(){const out=[];dutyAreas().forEach((ids,a)=>out.push({key:'area:'+a,label:a+'（'+dutyAreaCount(a)+' 位）',area:a,classIds:ids}));return out;}
 function dutyScopeOf(key){return dutyScopes().find(s=>s.key===key)||null;}
@@ -35,7 +35,7 @@ function dutyScopeLabel(sc){return sc?(sc.area||className(sc.classId)):'';}
 function dutyInScope(r,sc){return (r.area||studentArea(student(r.studentId)))===sc.area;}
 function dutyIsJH(s){const g=gradeNum(s?.grade);return g>=7&&g<=9;}
 function dutyIsElem(s){const g=gradeNum(s?.grade);return g>=1&&g<=6;}
-function dutyStudents(sc){if(sc.area)return data.students.filter(s=>!s.archived&&studentArea(s)===sc.area).sort(byNum);const ids=new Set();const list=[];sc.classIds.forEach(id=>classStudents(id).forEach(s=>{if(!ids.has(s.id)){ids.add(s.id);list.push(s);}}));return list.sort(byNum);}
+function dutyStudents(sc){if(sc.area)return data.students.filter(s=>!s.archived&&!closedStudent(s)&&studentArea(s)===sc.area).sort(byNum);const ids=new Set();const list=[];sc.classIds.forEach(id=>classStudents(id).forEach(s=>{if(!ids.has(s.id)){ids.add(s.id);list.push(s);}}));return list.sort(byNum);}
 function dutyStudentClass(s,sc){return [s.classId,...(s.classIds||[])].find(id=>sc.classIds.includes(id))||sc.classIds[0]||s.classId||'';}
 function dutyCalHits(date){return (data.calendar||[]).filter(e=>e&&e.date&&date>=e.date&&date<=(e.end&&e.end>=e.date?e.end:e.date));}
 // 範圍內的放假日：全部班級的假，或套用在範圍內班級的假；同日有補課則不算放假

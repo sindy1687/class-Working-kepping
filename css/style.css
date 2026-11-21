@@ -1180,3 +1180,20 @@ th.subth small{color:#4a7a58;font-weight:700}
 .retake-alert{animation:rw-pulse 1.6s ease-in-out infinite}
 @keyframes rw-pulse{0%,100%{opacity:1}50%{opacity:.55}}
 .gmatrix .gp.r3{background:#dbe4ff;color:#2b4acb}
+
+.att-cell.sub{background:#e8f0e9;color:#4a7a58;border-color:#c5dcc9}
+.attst.submark{background:#e8f0e9;color:#4a7a58}
+
+/* 學生檔案 */
+.sfile-link{all:unset;cursor:pointer;font-weight:700;color:inherit;border-bottom:1px dashed currentColor}.sfile-link:hover,.sfile-link:focus-visible{color:#2f6d4f;border-bottom-style:solid}
+dialog.sfile-dlg{width:min(980px,96vw);max-height:92vh;overflow:auto}
+.sfile-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.sfile-head h2{margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sfile-sum{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:14px;margin-top:6px}
+.sfile-sec{border:1px solid #e3e5df;border-radius:10px;padding:8px 12px;margin:8px 0}.sfile-sec summary{cursor:pointer;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.sfile-go{margin-left:auto;font-size:12px;padding:2px 10px}
+.sfile-table td{vertical-align:top;font-size:13px}.sfile-table th{white-space:nowrap;font-size:12px}
+
+/* 遊戲連結 */
+.gl-login{display:inline-block;font-size:11px;padding:1px 7px;border-radius:10px;background:#fdf0dd;color:#a05a3a;font-weight:600}
+.gl-suggest{border:1px solid #e3e5df;border-radius:10px;margin:10px 0;padding:6px 12px}.gl-suggest legend{font-weight:700;padding:0 6px}
+.gl-suggest-row{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px dashed #eceee9;cursor:pointer}.gl-suggest-row:first-of-type{border-top:0}.gl-suggest-row input{margin-top:4px;flex:none;width:auto}.gl-suggest-row span{display:flex;flex-direction:column;gap:2px}.gl-suggest-row span>small:last-child{color:#737b72}

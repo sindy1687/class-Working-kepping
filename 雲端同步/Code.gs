@@ -17,6 +17,7 @@ function doGet(e) {
     if (action === 'materialMeta') return out_(materialMeta_(e.parameter.url));
     if (action === 'weeklyNewsStatus') return out_(weeklyNewsStatus_());
     if (action === 'albumPhotos') return out_(albumPhotos_(e.parameter.url));
+    if (action === 'ytPlaylist') return out_(ytPlaylist_(e.parameter.list));
     if (action !== 'load') throw new Error('請更新 GAS 程式並部署新版本');
     return out_({ ok: true, files: load_() });
   } catch (err) {
@@ -218,6 +219,82 @@ function albumPhotos_(url) {
   if (!photos.length) throw new Error('相簿裡找不到可顯示的照片，請確認連結是公開分享的');
   const t = html.match(/<meta property="og:title" content="([^"]*)"/);
   return { ok: true, title: t ? t[1].replace(/&amp;/g, '&') : '', photos: photos };
+}
+
+/* YouTube 播放清單：只讀公開（或不公開但有連結）的清單頁，回傳影片 ID 與標題，不需要 API 金鑰、不會修改任何東西。 */
+function ytPlaylist_(list) {
+  list = String(list || '').trim();
+  if (!/^[\w-]{10,64}$/.test(list)) throw new Error('播放清單 ID 格式不正確');
+  const cache = CacheService.getScriptCache(), ck = 'ytpl-' + list, hit = cache.get(ck);
+  if (hit) return JSON.parse(hit);
+  let result = null, err = '';
+  try { result = ytPlaylistPage_(list); } catch (e) { err = String(e && e.message || e); }
+  if (!result || !result.videos.length) {
+    try { const r = ytPlaylistFeed_(list); if (r.videos.length) result = r; } catch (e) { err = err || String(e && e.message || e); }
+  }
+  if (!result || !result.videos.length) throw new Error('讀不到播放清單影片（' + (err || '清單可能是私人或已刪除') + '）。請確認清單設為「公開」或「不公開」。');
+  const out = { ok: true, list: list, title: result.title || '', videos: result.videos.slice(0, 500), partial: !!result.partial, source: result.source };
+  try { const s = JSON.stringify(out); if (s.length < 90000) cache.put(ck, s, 1800); } catch (e) {}
+  return out;
+}
+function ytText_(t) { return t ? String(t.simpleText || (t.runs || []).map(function (r) { return r.text; }).join('') || t.content || '') : ''; }
+function ytJsonAfter_(html, name) {
+  const m = new RegExp('(?:var\\s+' + name + '|window\\["' + name + '"\\])\\s*=\\s*\\{').exec(html);
+  if (!m) return null;
+  const start = m.index + m[0].length - 1;
+  let depth = 0, inStr = false, esc = false;
+  for (let j = start; j < html.length; j++) {
+    const ch = html[j];
+    if (inStr) { if (esc) esc = false; else if (ch === '\\') esc = true; else if (ch === '"') inStr = false; continue; }
+    if (ch === '"') inStr = true;
+    else if (ch === '{') depth++;
+    else if (ch === '}') { depth--; if (depth === 0) { try { return JSON.parse(html.slice(start, j + 1)); } catch (e) { return null; } } }
+  }
+  return null;
+}
+function ytPlaylistPage_(list) {
+  const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
+  const res = UrlFetchApp.fetch('https://www.youtube.com/playlist?list=' + list + '&hl=zh-TW&gl=TW', { muteHttpExceptions: true, followRedirects: true, headers: { 'Accept-Language': 'zh-TW,zh;q=0.9', 'User-Agent': ua } });
+  if (res.getResponseCode() !== 200) throw new Error('HTTP ' + res.getResponseCode());
+  const html = res.getContentText(), data = ytJsonAfter_(html, 'ytInitialData');
+  if (!data) throw new Error('YouTube 頁面格式改變');
+  const videos = [], seen = {};
+  const add = function (id, title, duration) { if (/^[\w-]{11}$/.test(id) && !seen[id]) { seen[id] = 1; videos.push({ id: id, title: title || '', duration: duration || '' }); } };
+  // 依頁面順序走訪 JSON，收集清單影片與「下一頁」代碼
+  const collect = function (root) {
+    const stack = [root]; let tok = '';
+    while (stack.length) {
+      const o = stack.pop();
+      if (!o || typeof o !== 'object') continue;
+      if (Array.isArray(o)) { for (let i = o.length - 1; i >= 0; i--) stack.push(o[i]); continue; }
+      const v = o.playlistVideoRenderer;
+      if (v && v.videoId) { if (v.isPlayable !== false) add(v.videoId, ytText_(v.title), ytText_(v.lengthText)); continue; }
+      const lk = o.lockupViewModel;
+      if (lk && lk.contentId && lk.contentType !== 'LOCKUP_CONTENT_TYPE_PLAYLIST') { const md = lk.metadata && lk.metadata.lockupMetadataViewModel; add(lk.contentId, md && md.title ? ytText_(md.title) : '', ''); continue; }
+      const c = o.continuationItemRenderer;
+      if (c) { const cmd = c.continuationEndpoint && c.continuationEndpoint.continuationCommand; if (cmd && cmd.token) tok = cmd.token; continue; }
+      const ks = Object.keys(o); for (let i = ks.length - 1; i >= 0; i--) stack.push(o[ks[i]]);
+    }
+    return tok;
+  };
+  let token = collect(data.contents || data);
+  const meta = data.metadata && data.metadata.playlistMetadataRenderer;
+  const title = meta ? meta.title : ytText_(data.header && data.header.playlistHeaderRenderer && data.header.playlistHeaderRenderer.title);
+  const key = (/"INNERTUBE_API_KEY":"([^"]+)"/.exec(html) || [])[1], ver = (/"INNERTUBE_CLIENT_VERSION":"([^"]+)"/.exec(html) || [])[1];
+  for (let n = 0; token && key && ver && n < 6 && videos.length < 500; n++) {
+    const r = UrlFetchApp.fetch('https://www.youtube.com/youtubei/v1/browse?key=' + encodeURIComponent(key) + '&prettyPrint=false', { method: 'post', contentType: 'application/json', muteHttpExceptions: true, headers: { 'User-Agent': ua }, payload: JSON.stringify({ context: { client: { clientName: 'WEB', clientVersion: ver, hl: 'zh-TW', gl: 'TW' } }, continuation: token }) });
+    if (r.getResponseCode() !== 200) break;
+    token = collect(JSON.parse(r.getContentText()));
+  }
+  return { title: title || '', videos: videos, partial: !!token, source: 'page' };
+}
+function ytXml_(s) { return String(s || '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim(); }
+function ytPlaylistFeed_(list) {
+  const r = UrlFetchApp.fetch('https://www.youtube.com/feeds/videos.xml?playlist_id=' + list, { muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) throw new Error('HTTP ' + r.getResponseCode());
+  const x = r.getContentText(), videos = [], re = /<entry>[\s\S]*?<yt:videoId>([\w-]{11})<\/yt:videoId>[\s\S]*?<title>([^<]*)<\/title>[\s\S]*?<\/entry>/g;
+  let m; while ((m = re.exec(x))) videos.push({ id: m[1], title: ytXml_(m[2]), duration: '' });
+  return { title: ytXml_((/<title>([^<]*)<\/title>/.exec(x) || [])[1]), videos: videos, partial: true, source: 'feed' };
 }
 
 function out_(obj) {
